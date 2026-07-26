@@ -96,6 +96,19 @@ p:last-child { margin-bottom: 0; }
 }
 .btn-wa { background: var(--wa); color: #04140a; border-color: var(--wa); }
 .btn-wa:hover { background: var(--wa-press); color: #04140a; }
+/* Product cards: transparent WhatsApp CTA (green border/text only) */
+.product-card .btn-wa,
+.pc-actions .btn-wa {
+  background: transparent;
+  color: var(--wa);
+  border-color: var(--wa);
+}
+.product-card .btn-wa:hover,
+.pc-actions .btn-wa:hover {
+  background: rgba(37, 211, 102, 0.12);
+  color: var(--wa);
+  border-color: var(--wa);
+}
 .btn-danger { background: transparent; border-color: var(--danger); color: var(--danger); }
 .btn-sm { min-height: 40px; padding: 0.5rem 0.85rem; font-size: 0.9rem; }
 .link-wa { display: inline-flex; align-items: center; gap: 0.4rem; color: var(--wa); font-weight: 600; min-height: 44px; }
@@ -120,17 +133,28 @@ input:focus, select:focus, textarea:focus {
 .site-header {
   position: sticky; top: 0; z-index: 80;
   min-height: var(--header-h);
-  background: rgba(10, 11, 12, 0.42);
+  background: transparent;
   border-bottom: 1px solid transparent;
+  transition: border-color 0.25s var(--ease);
+  /* stacking context without filter/transform so fixed .main-nav can use the viewport */
+  isolation: isolate;
+}
+/* Blur on a sibling layer — NOT on .site-header — so mobile fixed nav isn't trapped */
+.header-glass {
+  position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background: rgba(10, 11, 12, 0.42);
   backdrop-filter: blur(22px) saturate(1.15);
   -webkit-backdrop-filter: blur(22px) saturate(1.15);
-  transition: border-color 0.25s var(--ease), background 0.25s var(--ease);
+  transition: background 0.25s var(--ease);
 }
 .site-header.scrolled {
   border-bottom-color: var(--line);
+}
+.site-header.scrolled .header-glass {
   background: rgba(10, 11, 12, 0.55);
 }
 .header-inner {
+  position: relative; z-index: 1;
   display: flex; align-items: center; justify-content: space-between;
   gap: 0.75rem; min-height: var(--header-h);
 }
@@ -209,6 +233,9 @@ input:focus, select:focus, textarea:focus {
 .hero-layer-outline {
   z-index: 0; opacity: 1;
   display: block;
+}
+.hero-layer-outline-canvas {
+  z-index: 1;
 }
 .hero-layer-photo {
   opacity: 0; z-index: 1;

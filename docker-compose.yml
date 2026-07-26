@@ -1,4 +1,14 @@
-# Production-only stack for Garg Industrial Mesh
+# Production stack: Express app + Cloudflare Tunnel
+#
+# cloudflared only forwards HTTPS from Cloudflare → the web container.
+# In Zero Trust, set the public hostname service URL to: http://web:3000
+#
+# Usage:
+#   cp .env.prod.example .env.prod   # fill SITE_URL, secrets, TUNNEL_TOKEN
+#   ./scripts/docker/start.sh
+#
+# Do NOT reuse another project's TUNNEL_TOKEN (e.g. FitCV). Create a new tunnel.
+
 services:
   web:
     build: .
@@ -6,8 +16,8 @@ services:
     env_file:
       - .env.prod
     environment:
-      # TEMP: verbose debug logging — set to "0" or remove when done diagnosing
-      DEBUG: "1"
+      DEBUG: "0"
+    # Host port optional (local curl / debug). Tunnel uses Docker network, not this.
     ports:
       - "${PORT:-3000}:3000"
     volumes:
@@ -20,6 +30,16 @@ services:
       timeout: 5s
       retries: 3
       start_period: 20s
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: gargmesh-cloudflared
+    restart: unless-stopped
+    command: tunnel run
+    environment:
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN:?Set TUNNEL_TOKEN in .env.prod — new Cloudflare tunnel token}
+    depends_on:
+      - web
 
 volumes:
   gargmesh-data:

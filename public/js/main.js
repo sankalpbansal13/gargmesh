@@ -3,10 +3,11 @@
   'use strict';
   var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  // --- Hero: phase 1 circle-reveal (perforated), then 5s sheet-type carousel ---
+  // --- Hero: phase 1 outline reveal, then 5s sheet-type carousel ---
   var hero = document.getElementById('heroBrand');
   if (hero && hero.classList.contains('hero-reveal')) {
     var canvas = document.getElementById('heroMeshCanvas');
+    var outlineImg = document.getElementById('heroOutlineImg');
     var photoA = document.getElementById('heroPhotoA');
     var photoB = document.getElementById('heroPhotoB');
     var media = hero.querySelector('.hero-media');
@@ -16,6 +17,7 @@
     var dotsEl = document.getElementById('heroDots');
     var prevBtn = document.getElementById('heroPrev');
     var nextBtn = document.getElementById('heroNext');
+    var isNarrow = window.matchMedia && window.matchMedia('(max-width: 859px)').matches;
     var slides = [];
     try { slides = JSON.parse(hero.getAttribute('data-hero-slides') || '[]'); } catch (e) { slides = []; }
     if (!slides.length) {
@@ -177,6 +179,7 @@
     var finish = function () {
       hero.classList.remove('hero-reveal-photo');
       hero.classList.add('hero-reveal-done');
+      if (canvas) canvas.hidden = true;
       startCarousel();
     };
     var startPhotoPhase = function () {
@@ -184,38 +187,56 @@
       window.setTimeout(finish, 1500);
     };
 
+    // Mobile / reduced-motion: show static grey outline, then fade to photo (no heavy canvas).
+    var startSimpleOutline = function () {
+      if (canvas) canvas.hidden = true;
+      if (outlineImg) outlineImg.hidden = false;
+      if (reduceMotion) {
+        if (photoA) {
+          photoA.classList.add('is-active');
+          photoA.style.opacity = '1';
+        }
+        hero.classList.add('hero-reveal-done');
+        startCarousel();
+        return;
+      }
+      var hold = isNarrow ? 900 : 1100;
+      window.setTimeout(startPhotoPhase, hold);
+    };
+
     document.addEventListener('visibilitychange', function () {
       if (document.hidden) clearCarouselTimer();
       else if (hero.classList.contains('hero-reveal-done') && !transitioning) scheduleNext();
     });
 
-    if (reduceMotion || !canvas || !photoA || !media) {
-      if (photoA) {
-        photoA.classList.add('is-active');
-        photoA.style.opacity = '1';
-      }
-      hero.classList.add('hero-reveal-done');
-      startCarousel();
+    if (reduceMotion || !photoA || !media || isNarrow || !canvas) {
+      startSimpleOutline();
     } else {
       Promise.all([
         loadImg('/hero-mesh-outline.jpg'),
         photoA.decode ? photoA.decode().catch(function () {}) : Promise.resolve()
       ]).then(function (results) {
         var outline = results[0];
-        var ctx = canvas.getContext('2d');
+        var ctx = canvas.getContext('2d', { alpha: false });
         if (!ctx || !outline) {
-          hero.classList.add('hero-reveal-done');
-          startCarousel();
+          startSimpleOutline();
           return;
         }
 
-        var dpr = Math.min(window.devicePixelRatio || 1, 2);
+        // Cap backing store so iOS/mobile GPUs don't abort the canvas.
+        var dpr = Math.min(window.devicePixelRatio || 1, 1.5);
         var resize = function () {
           var rect = media.getBoundingClientRect();
           var cssW = Math.max(1, Math.round(rect.width));
           var cssH = Math.max(1, Math.round(rect.height));
-          canvas.style.width = cssW + 'px';
-          canvas.style.height = cssH + 'px';
+          var maxEdge = 1400;
+          if (cssW > maxEdge || cssH > maxEdge) {
+            var s = maxEdge / Math.max(cssW, cssH);
+            cssW = Math.max(1, Math.round(cssW * s));
+            cssH = Math.max(1, Math.round(cssH * s));
+          }
+          canvas.style.width = rect.width + 'px';
+          canvas.style.height = rect.height + 'px';
           canvas.width = Math.round(cssW * dpr);
           canvas.height = Math.round(cssH * dpr);
           ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -223,12 +244,20 @@
         };
 
         var size = resize();
-        var fit = coverDraw(size.w, size.h, outline.naturalWidth, outline.naturalHeight);
+        if (size.w * size.h * dpr * dpr > 2.5e6) {
+          startSimpleOutline();
+          return;
+        }
 
+        var fit = coverDraw(size.w, size.h, outline.naturalWidth, outline.naturalHeight);
         var full = document.createElement('canvas');
         full.width = canvas.width;
         full.height = canvas.height;
-        var fctx = full.getContext('2d');
+        var fctx = full.getContext('2d', { alpha: false });
+        if (!fctx) {
+          startSimpleOutline();
+          return;
+        }
         fctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         fctx.fillStyle = '#070809';
         fctx.fillRect(0, 0, size.w, size.h);
@@ -253,6 +282,8 @@
         }
         cells.sort(function (a, b) { return a.order - b.order; });
 
+        if (outlineImg) outlineImg.hidden = true;
+        canvas.hidden = false;
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         ctx.fillStyle = '#070809';
         ctx.fillRect(0, 0, size.w, size.h);
@@ -279,8 +310,7 @@
         };
         requestAnimationFrame(drawBatch);
       }).catch(function () {
-        hero.classList.add('hero-reveal-done');
-        startCarousel();
+        startSimpleOutline();
       });
     }
   }
@@ -300,6 +330,10 @@
   var toggle = document.getElementById('navToggle');
   var nav = document.getElementById('mainNav');
   if (toggle && nav) {
+    // Keep drawer on <body> so fixed positioning is never trapped by header filters.
+    if (nav.parentElement !== document.body) {
+      document.body.appendChild(nav);
+    }
     var backdrop = document.createElement('div');
     backdrop.className = 'nav-backdrop';
     document.body.appendChild(backdrop);
@@ -307,6 +341,7 @@
       nav.classList.add('open');
       backdrop.classList.add('open');
       toggle.setAttribute('aria-expanded', 'true');
+      toggle.setAttribute('aria-label', 'Close menu');
       document.documentElement.style.overflow = 'hidden';
       if (!nav.querySelector('.drawer-close')) {
         var close = document.createElement('button');
@@ -322,11 +357,19 @@
       nav.classList.remove('open');
       backdrop.classList.remove('open');
       toggle.setAttribute('aria-expanded', 'false');
+      toggle.setAttribute('aria-label', 'Open menu');
       document.documentElement.style.overflow = '';
     };
-    toggle.addEventListener('click', function () { nav.classList.contains('open') ? closeNav() : open(); });
+    toggle.addEventListener('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (nav.classList.contains('open')) closeNav();
+      else open();
+    });
     backdrop.addEventListener('click', closeNav);
-    nav.querySelectorAll('a').forEach(function (a) { a.addEventListener('click', closeNav); });
+    Array.prototype.forEach.call(nav.querySelectorAll('a'), function (a) {
+      a.addEventListener('click', closeNav);
+    });
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape' && nav.classList.contains('open')) closeNav();
     });
