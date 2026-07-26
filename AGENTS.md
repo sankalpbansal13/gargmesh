@@ -230,7 +230,7 @@ There is no migration framework. `db.js` uses `addColumnIfMissing(table, column,
 
 **Repair path:** If `ss-welded-mesh` content looks corrupted (short description/meta), seed restores from `seed-data.js`. Do not remove this unless the bug is permanently fixed elsewhere.
 
-**Images are not seeded into DB rows by `seed.js`.** Image files live under `public/uploads/` and are associated via admin upload or utility scripts (`scripts/import-hires.js`, etc.).
+**Images:** files live under `public/uploads/` (committed to git). On every boot, `src/seed-images.js` (called from `seed.js`) links existing files to products in `product_images` (idempotent). Docker entrypoint syncs bundled uploads into the writable volume. Admin can still upload more via the portal.
 
 ---
 

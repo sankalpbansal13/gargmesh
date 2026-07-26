@@ -1,5 +1,6 @@
 const db = require('./db');
 const { products, slugify, buildFaq } = require('./seed-data');
+const { ensureProductImages } = require('./seed-images');
 
 /**
  * Optional one-shot repair for SS Welded Mesh corruption.
@@ -63,20 +64,22 @@ function run() {
     console.log(`Seed: products already present (${count.c}). Checking for missing…`);
     repairSsWeldedMesh();
     ensureMissingProducts();
-    return;
+  } else {
+    const insert = db.prepare(`
+      INSERT INTO products
+      (slug, name, category, short_desc, description, materials, sizes, grades, applications, price_from, faq, meta_title, meta_description, meta_keywords, featured)
+      VALUES (@slug, @name, @category, @short_desc, @description, @materials, @sizes, @grades, @applications, @price_from, @faq, @meta_title, @meta_description, @meta_keywords, @featured)
+    `);
+    const tx = db.transaction((items) => {
+      for (const p of items) {
+        insert.run({ ...p, slug: slugify(p.name), faq: buildFaq(p) });
+      }
+    });
+    tx(products);
+    console.log(`Seed: inserted ${products.length} products.`);
   }
-  const insert = db.prepare(`
-    INSERT INTO products
-    (slug, name, category, short_desc, description, materials, sizes, grades, applications, price_from, faq, meta_title, meta_description, meta_keywords, featured)
-    VALUES (@slug, @name, @category, @short_desc, @description, @materials, @sizes, @grades, @applications, @price_from, @faq, @meta_title, @meta_description, @meta_keywords, @featured)
-  `);
-  const tx = db.transaction((items) => {
-    for (const p of items) {
-      insert.run({ ...p, slug: slugify(p.name), faq: buildFaq(p) });
-    }
-  });
-  tx(products);
-  console.log(`Seed: inserted ${products.length} products.`);
+  // Always attach cover/gallery images from public/uploads when files exist.
+  ensureProductImages();
 }
 
 if (require.main === module) run();

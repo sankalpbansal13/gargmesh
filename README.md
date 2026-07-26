@@ -60,7 +60,9 @@ Logs append to `logs/nightly-restart.log`.
 | Volume | Mount | Contents |
 |--------|--------|----------|
 | `gargmesh-data` | `/app/data` | SQLite DB + sessions |
-| `gargmesh-uploads` | `/app/public/uploads` | Product images |
+| `gargmesh-uploads` | `/app/public/uploads` | Product images (seeded from repo on first start; admin uploads persist) |
+
+Product cover photos live in `public/uploads/` and are linked into SQLite on boot via `src/seed-images.js`. Docker entrypoint copies bundled photos into the uploads volume without overwriting newer admin uploads.
 
 Backup example: `docker run --rm -v gargmesh-data:/data -v "$(pwd):/backup" alpine tar czf /backup/gargmesh-data-backup.tgz -C /data .`
 
