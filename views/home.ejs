@@ -1,0 +1,300 @@
+<%
+const localBusiness = {
+  "@context":"https://schema.org","@type":"HardwareStore",
+  "name":"GARG INDUSTRIAL MESH","image":site.url+"/logo.png","telephone":"+91"+site.phone,
+  "address":{"@type":"PostalAddress","streetAddress":"G-25, G Block, Sector 9","addressLocality":"Noida","addressRegion":"Uttar Pradesh","postalCode":"201301","addressCountry":"IN"},
+  "url":site.url,"openingHours":"Mo-Sa 09:30-19:30","priceRange":"₹₹",
+  "areaServed":["Noida","Greater Noida","Delhi","Ghaziabad","Faridabad","Gurugram"]
+};
+const organization = {"@context":"https://schema.org","@type":"Organization","name":"GARG INDUSTRIAL MESH","url":site.url,"logo":site.url+"/logo.png","telephone":"+91"+site.phone,"address":{"@type":"PostalAddress","streetAddress":"G-25, G Block, Sector 9","addressLocality":"Noida","addressRegion":"Uttar Pradesh","postalCode":"201301","addressCountry":"IN"}};
+const website = {"@context":"https://schema.org","@type":"WebSite","name":"GARG INDUSTRIAL MESH","url":site.url,"potentialAction":{"@type":"SearchAction","target":site.url+"/products?q={search_term_string}","query-input":"required name=search_term_string"}};
+const faqs = [
+  {q:"Where is Garg Industrial Mesh located?", a:"We are at G-25, G Block, Sector 9, Noida, Uttar Pradesh 201301, serving Noida, Greater Noida and Delhi NCR."},
+  {q:"Do you supply wire mesh in bulk for projects?", a:"Yes. We supply SS, GI and MS welded mesh, perforated sheets and fencing in bulk for construction, industrial and architectural projects across Delhi NCR. Call 9910238277 for wholesale pricing."},
+  {q:"Which areas do you deliver to?", a:"We deliver across Noida, Greater Noida, Delhi, Ghaziabad, Faridabad and Gurugram. Same-day dispatch available for in-stock items."},
+  {q:"Can I get a price quote before ordering?", a:"Yes. Use the Get Quote form or WhatsApp us at 9910238277 with the product name and we will share price and availability immediately."},
+  {q:"What materials and grades do you offer?", a:"We offer stainless steel (SS 201 & 304), galvanised iron (GI), mild steel (MS), copper, brass, aluminium, PVC coated and HDPE — including perforated sheets and expanded mesh (diamond / barfi jali) in MS, GI, SS, aluminium, copper and brass. Multiple grades and sizes available."},
+  {q:"Do you cut mesh to custom sizes?", a:"Yes. Sheets and rolls can be cut to your exact project dimensions. Share your requirement and we will prepare it."},
+  {q:"How fast is delivery in Delhi NCR?", a:"In-stock items are dispatched same day. Delivery across Noida, Greater Noida, Delhi, Ghaziabad, Faridabad and Gurugram typically takes 1–2 days."},
+  {q:"Are you a GST registered business?", a:"Yes — Garg Industrial Mesh is GST Verified. We provide proper GST invoices with every order so B2B buyers can claim input credit."}
+];
+const faqLd = {"@context":"https://schema.org","@type":"FAQPage","mainEntity":faqs.map(f=>({"@type":"Question","name":f.q,"acceptedAnswer":{"@type":"Answer","text":f.a}}))};
+const industries = [
+  {icon:'building', label:'Construction'},
+  {icon:'factory', label:'Manufacturing'},
+  {icon:'shield', label:'Fencing & Security'},
+  {icon:'leaf', label:'Agriculture & Farm'},
+  {icon:'filter', label:'Filtration'},
+  {icon:'grid', label:'Architecture'},
+  {icon:'wind', label:'HVAC & Ventilation'},
+  {icon:'bird', label:'Bird & Monkey Control'}
+];
+/* Icons: fence panel (shield), wheat/crop (leaf), sieve (filter), mesh grid (grid), fan (wind), bird+spikes (bird) */
+const whys = [
+  {icon:'tag', h:'Direct Manufacturer Prices', p:'Buy direct from the source — no middleman markup on bulk mesh orders.'},
+  {icon:'zap', h:'Same-Day Dispatch', p:'In-stock items dispatched same day across Noida & Delhi NCR.'},
+  {icon:'layers', h:'Full Grade Range', p:'SS 201/304, GI, MS — every grade, opening size and sheet dimension.'},
+  {icon:'ruler', h:'Custom Cutting', p:'Sheets and rolls cut to your exact size for your project.'},
+  {icon:'truck', h:'Pan-NCR Delivery', p:'Noida, Greater Noida, Delhi, Ghaziabad, Faridabad, Gurugram.'},
+  {icon:'handshake', h:'Trusted Supplier', p:'Years of experience serving contractors, builders and factories.'}
+];
+%>
+<% const jsonLd = localBusiness; %>
+<% const extraLd = [faqLd, organization, website]; %>
+<% const meta_description = "SS, GI, MS, copper, brass & aluminium wire mesh, perforated sheets & expanded mesh (barfi jali) supplier in Noida. Wholesale prices, same-day NCR delivery. Call 9910238277."; %>
+<% const meta_keywords = "wire mesh noida, perforated sheet noida, expanded mesh noida, copper expanded mesh, brass expanded mesh, ms expanded mesh, barfi jali, copper perforated sheet, welded mesh supplier noida, garg industrial mesh"; %>
+<%- include('partials/_head', { meta_description: meta_description, meta_keywords: meta_keywords, jsonLd: jsonLd, extraLd: extraLd }) %>
+<%- include('partials/_header') %>
+
+<section class="hero hero-photo" id="heroBrand" aria-label="Garg Industrial Mesh"
+  style="--hero-img:url('/gallery-ss-welded.jpg')">
+  <div class="hero-media" aria-hidden="true"></div>
+  <div class="container hero-inner">
+    <p class="hero-kicker">Sector 9, Noida · Delhi NCR</p>
+    <h1 class="hero-headline">Industrial Wire Mesh &amp; Perforated Sheets</h1>
+    <p class="hero-sub">SS, GI, MS, copper, brass &amp; aluminium — perforated sheets, expanded mesh, welded mesh, fencing, bird &amp; monkey spikes — wholesale from Garg Industrial Mesh.</p>
+    <div class="hero-cta">
+      <a href="/contact" class="btn btn-orange" data-ga="quote">Get Free Quote</a>
+      <a href="https://wa.me/<%= site.whatsapp %>?text=<%= encodeURIComponent('Hi Garg Industrial Mesh, I would like a quote.') %>" class="link-wa link-wa-quiet" target="_blank" rel="noopener" data-ga="whatsapp"><%- include('partials/_icon', {name:'whatsapp', size:16}) %> WhatsApp 9910238277</a>
+    </div>
+    <p class="hero-note">Call <a href="tel:<%= site.phone %>"><%= site.phone %></a> · GST Verified · Same-day dispatch</p>
+    <ul class="trust-list-inline">
+      <li>MS / GI / SS / Cu / Brass / Alu sheets</li>
+      <li>Same-day dispatch</li>
+      <li>Cut to size</li>
+    </ul>
+  </div>
+</section>
+
+<section class="industries">
+  <div class="container">
+    <div class="section-head section-head-left reveal">
+      <span class="eyebrow">Who we supply</span>
+      <h2>Industries We Serve</h2>
+    </div>
+    <div class="ind-grid reveal-stagger">
+      <% industries.forEach(function(it){ %>
+      <div class="ind-item">
+        <span class="ind-ico"><%- include('partials/_icon', {name:it.icon, size:22}) %></span>
+        <span><%= it.label %></span>
+      </div>
+      <% }); %>
+    </div>
+  </div>
+</section>
+
+<section class="section alt section-tight">
+  <div class="container">
+    <div class="section-head reveal">
+      <span class="eyebrow">Our range</span>
+      <h2>Product Categories</h2>
+      <p class="section-sub">Multiple grades &amp; sizes — request a quote for wholesale pricing.</p>
+    </div>
+    <div class="product-grid reveal-stagger">
+      <% products.forEach(function(p){ %>
+        <%- include('partials/_productcard', {product: p}) %>
+      <% }); %>
+    </div>
+  </div>
+</section>
+
+<section class="section section-tight">
+  <div class="container">
+    <div class="section-head section-head-left reveal">
+      <span class="eyebrow">Showcase</span>
+      <h2>Product Gallery</h2>
+      <p class="section-sub section-sub-left">Real stock from our Sector 9, Noida warehouse — welded mesh, PVC mesh, chain link, perforated sheets and more.</p>
+    </div>
+    <div class="gallery-grid reveal-stagger">
+      <a href="/products/ss-welded-mesh" class="gallery-item">
+        <img src="/gallery-ss-welded.jpg" alt="SS 304 welded mesh 3ft and 4ft — Garg Industrial Mesh" loading="lazy" width="480" height="640">
+        <span>SS Welded Mesh</span>
+      </a>
+      <a href="/products/pvc-mesh" class="gallery-item">
+        <img src="/gallery-pvc-mesh.jpg" alt="PVC coated mesh rolls — Garg Industrial Mesh" loading="lazy" width="480" height="640">
+        <span>PVC Mesh</span>
+      </a>
+      <a href="/products/chain-link-fence" class="gallery-item">
+        <img src="/gallery-chain-link.jpg" alt="Chain link fence 3.5ft to 5ft — Garg Industrial Mesh" loading="lazy" width="480" height="640">
+        <span>Chain Link Fence</span>
+      </a>
+      <a href="/products/ms-perforated-sheet" class="gallery-item">
+        <img src="/gallery-perforated.jpg" alt="Perforated sheet 3x8 and 4x8 — Garg Industrial Mesh" loading="lazy" width="480" height="640">
+        <span>Perforated Sheet</span>
+      </a>
+      <a href="/products/aluminium-door-mesh" class="gallery-item">
+        <img src="/gallery-alu-jaali.jpg" alt="Aluminium door mesh jaali — Garg Industrial Mesh" loading="lazy" width="480" height="640">
+        <span>Aluminium Jaali</span>
+      </a>
+      <a href="/products/bird-spikes" class="gallery-item">
+        <img src="/gallery-bird-spikes.jpg" alt="SS 304 bird spikes — Garg Industrial Mesh" loading="lazy" width="480" height="640">
+        <span>Bird Spikes</span>
+      </a>
+      <a href="/products/construction-net" class="gallery-item">
+        <img src="/gallery-construction-net.jpg" alt="Construction safety net — Garg Industrial Mesh" loading="lazy" width="480" height="640">
+        <span>Construction Net</span>
+      </a>
+      <a href="/products/bird-mesh" class="gallery-item">
+        <img src="/gallery-bird-mesh.jpg" alt="Bird mesh netting — Garg Industrial Mesh" loading="lazy" width="480" height="640">
+        <span>Bird Mesh</span>
+      </a>
+      <a href="/products/monkey-spikes" class="gallery-item">
+        <img src="/gallery-monkey-spikes.jpg" alt="Monkey spikes for balconies — Garg Industrial Mesh" loading="lazy" width="480" height="640">
+        <span>Monkey Spikes</span>
+      </a>
+      <a href="/products/aluminium-perforated-sheet" class="gallery-item">
+        <img src="/gallery-perforated.jpg" alt="Aluminium perforated sheet panels — Garg Industrial Mesh" loading="lazy" width="480" height="640">
+        <span>Aluminium Perforated</span>
+      </a>
+      <a href="/products/copper-perforated-sheet" class="gallery-item">
+        <img src="/gallery-copper-perforated.png" alt="Copper perforated sheet — Garg Industrial Mesh Noida" loading="lazy" width="480" height="640">
+        <span>Copper Perforated</span>
+      </a>
+      <a href="/products/brass-perforated-sheet" class="gallery-item">
+        <img src="/gallery-brass-perforated.png" alt="Brass perforated sheet — Garg Industrial Mesh Noida" loading="lazy" width="480" height="640">
+        <span>Brass Perforated</span>
+      </a>
+      <a href="/products/copper-expanded-mesh" class="gallery-item">
+        <img src="/gallery-copper-expanded.png" alt="Copper expanded mesh roll — Garg Industrial Mesh Noida" loading="lazy" width="480" height="640">
+        <span>Copper Expanded</span>
+      </a>
+      <a href="/products/brass-expanded-mesh" class="gallery-item">
+        <img src="/gallery-brass-expanded.png" alt="Brass expanded mesh diamond pattern — Garg Industrial Mesh" loading="lazy" width="480" height="640">
+        <span>Brass Expanded</span>
+      </a>
+      <a href="/products/ms-expanded-mesh" class="gallery-item">
+        <img src="/gallery-expanded-mesh.jpg" alt="MS expanded mesh / barfi jali — Garg Industrial Mesh" loading="lazy" width="480" height="640">
+        <span>MS Expanded Mesh</span>
+      </a>
+      <a href="/products/ss-expanded-mesh" class="gallery-item">
+        <img src="/gallery-expanded-mesh.jpg" alt="SS expanded mesh — Garg Industrial Mesh Noida" loading="lazy" width="480" height="640">
+        <span>SS Expanded Mesh</span>
+      </a>
+      <div class="gallery-item">
+        <img src="/gallery-barfi-jali.jpg" alt="Barfi jali expanded mesh samples — Garg Industrial Mesh" loading="lazy" width="480" height="640">
+        <span>Barfi Jali</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section section-loose">
+  <div class="container">
+    <div class="section-head section-head-left reveal">
+      <span class="eyebrow">Why us</span>
+      <h2>Why Choose Garg Industrial Mesh</h2>
+    </div>
+    <div class="why-grid reveal-stagger">
+      <% whys.forEach(function(w){ %>
+      <div class="why-item">
+        <span class="why-ico"><%- include('partials/_icon', {name:w.icon, size:22}) %></span>
+        <div>
+          <h3><%= w.h %></h3>
+          <p><%= w.p %></p>
+        </div>
+      </div>
+      <% }); %>
+    </div>
+  </div>
+</section>
+
+<section class="section alt">
+  <div class="container">
+    <div class="section-head section-head-left reveal">
+      <span class="eyebrow">How it works</span>
+      <h2>A Simple 4-Step Process</h2>
+    </div>
+    <div class="process reveal-stagger">
+      <div class="step"><span class="step-num">01</span><h3>Enquire</h3><p>Call, WhatsApp or fill the Get Quote form with your requirement.</p></div>
+      <div class="step"><span class="step-num">02</span><h3>Get Quote</h3><p>We share price, grade and availability within minutes.</p></div>
+      <div class="step"><span class="step-num">03</span><h3>Confirm &amp; Cut</h3><p>Confirm order — we cut to size and prepare for dispatch.</p></div>
+      <div class="step"><span class="step-num">04</span><h3>Delivered</h3><p>Same-day or next-day delivery across Delhi NCR.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="stats">
+  <div class="container stats-inner reveal-stagger">
+    <div class="stat"><strong>23<span class="accent">+</span></strong><span>Product Types</span></div>
+    <div class="stat"><strong>6</strong><span>NCR Cities Served</span></div>
+    <div class="stat"><strong>SS/GI/MS</strong><span>All Grades</span></div>
+    <div class="stat"><strong>Same Day</strong><span>Dispatch</span></div>
+  </div>
+</section>
+
+<section class="section section-tight">
+  <div class="container">
+    <div class="section-head section-head-left reveal">
+      <span class="eyebrow">Coverage</span>
+      <h2>Areas We Serve</h2>
+    </div>
+    <div class="areas-row reveal-stagger">
+      <a href="/areas/noida" class="area-link">Noida</a>
+      <a href="/areas/greater-noida" class="area-link">Greater Noida</a>
+      <a href="/areas/delhi" class="area-link">Delhi</a>
+      <a href="/areas/ghaziabad" class="area-link">Ghaziabad</a>
+      <a href="/areas/faridabad" class="area-link">Faridabad</a>
+      <a href="/areas/gurugram" class="area-link">Gurugram</a>
+    </div>
+  </div>
+</section>
+
+<section class="section alt">
+  <div class="container">
+    <div class="section-head section-head-left reveal">
+      <span class="eyebrow">Reviews</span>
+      <h2>Google Reviews Coming Soon</h2>
+      <p class="section-sub section-sub-left">As customers rate us on Google, real reviews will appear here. We do not show fabricated testimonials.</p>
+    </div>
+    <div class="reviews-cta reveal">
+      <p>Bought from us? Leave a Google review — it helps other buyers in Noida &amp; Delhi NCR find a trusted mesh supplier.</p>
+      <a href="<%= site.googleReviewUrl %>" class="btn btn-orange" target="_blank" rel="noopener" data-ga="leave_review">Leave a Google Review</a>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="section-head reveal">
+      <span class="eyebrow">Questions</span>
+      <h2>Frequently Asked Questions</h2>
+    </div>
+    <div class="accordion reveal">
+      <% faqs.forEach(function(f){ %>
+      <div class="acc-item">
+        <button class="acc-head" aria-expanded="false"><span><%= f.q %></span><span class="acc-sign" aria-hidden="true"><%- include('partials/_icon', {name:'chevron-down', size:16}) %></span></button>
+        <div class="acc-body"><p><%= f.a %></p></div>
+      </div>
+      <% }); %>
+    </div>
+  </div>
+</section>
+
+<section class="final-cta">
+  <div class="container final-inner">
+    <div class="final-text reveal">
+      <span class="eyebrow">Get started</span>
+      <h2>Get a Free Quote Today</h2>
+      <p>Tell us grade, size and quantity — we reply with price &amp; availability within minutes.</p>
+      <div class="final-contact">
+        <a href="tel:<%= site.phone %>" class="btn btn-orange" data-ga="call"><%- include('partials/_icon', {name:'phone', size:18}) %> Call <%= site.phone %></a>
+        <a href="https://wa.me/<%= site.whatsapp %>" class="link-wa link-wa-quiet" target="_blank" rel="noopener" data-ga="whatsapp"><%- include('partials/_icon', {name:'whatsapp', size:16}) %> WhatsApp</a>
+      </div>
+    </div>
+    <form class="quote-form reveal" action="/enquiry" method="POST">
+      <input type="hidden" name="redirect" value="/?sent=1">
+      <%- include('partials/_enquiry_guard', { hpId: 'home' }) %>
+      <span class="eyebrow">Request Quote</span>
+      <h3>Send Your Requirement</h3>
+      <input type="text" name="name" placeholder="Your name" required>
+      <input type="tel" name="phone" placeholder="Phone number" required>
+      <input type="text" name="product" placeholder="Product / requirement">
+      <textarea name="message" placeholder="Grade, size, quantity..." rows="3"></textarea>
+      <button type="submit" class="btn btn-orange btn-block" data-ga="enquiry_submit">Send Enquiry</button>
+      <% if (typeof sent !== 'undefined' && sent) { %><p class="form-success">Thank you! We will contact you shortly.</p><% } %>
+    </form>
+  </div>
+</section>
+
+<%- include('partials/_stickybar') %>
+<%- include('partials/_footer') %>

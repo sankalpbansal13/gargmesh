@@ -1,0 +1,40 @@
+<a href="#content" class="skip-link">Skip to content</a>
+<div class="utility-bar">
+  <div class="container util-inner">
+    <a href="tel:<%= site.phone %>" class="util-link">
+      <%- include('_icon', {name:'phone', size:15, class:'util-ico'}) %><%= site.phone %>
+    </a>
+    <a href="https://wa.me/<%= site.whatsapp %>" class="util-link" target="_blank" rel="noopener">
+      <%- include('_icon', {name:'whatsapp', size:15, class:'util-ico'}) %>WhatsApp
+    </a>
+    <span class="util-link util-gst">
+      <%- include('_gst_badge', { iconSize: 15 }) %>
+    </span>
+  </div>
+</div>
+<header class="site-header" id="siteHeader">
+  <div class="container header-inner">
+    <a href="/" class="logo" aria-label="Garg Industrial Mesh Home">
+      <img class="logo-img" src="/logo-white.png" alt="Garg Industrial Mesh" width="200" height="48" decoding="async">
+    </a>
+    <nav class="main-nav" id="mainNav" aria-label="Main navigation">
+      <% const pg = typeof page !== 'undefined' ? page : ''; %>
+      <a href="/" class="<%= pg==='home'?'active':'' %>">Home</a>
+      <a href="/products" class="<%= pg==='products'?'active':'' %>">Products</a>
+      <a href="/areas" class="<%= pg==='areas'||pg==='area'||pg==='sector'?'active':'' %>">Areas We Serve</a>
+      <a href="/about" class="<%= pg==='about'?'active':'' %>">About</a>
+      <a href="/contact" class="<%= pg==='contact'?'active':'' %>">Contact</a>
+      <a href="/blog" class="<%= pg==='blog'||pg==='post'?'active':'' %>">Blog</a>
+    </nav>
+    <div class="header-actions">
+      <a href="tel:<%= site.phone %>" class="icon-btn" aria-label="Call now" title="Call now">
+        <%- include('_icon', {name:'phone', size:20}) %>
+      </a>
+      <a href="/contact" class="btn btn-orange btn-quote">Get Quote</a>
+      <button class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false">
+        <%- include('_icon', {name:'menu', size:22}) %>
+      </button>
+    </div>
+  </div>
+</header>
+<main id="content">

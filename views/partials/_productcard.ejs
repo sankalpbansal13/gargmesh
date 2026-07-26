@@ -1,0 +1,27 @@
+<% const slug = product.slug || slugify(product.name); %>
+<article class="product-card reveal">
+  <a href="/products/<%= slug %>" class="pc-media">
+    <% if (product.image) { %>
+      <img src="<%= product.image %>" alt="<%= product.name %> in Noida — Garg Industrial Mesh" loading="lazy" width="600" height="450">
+    <% } else { %>
+      <div class="pc-empty" aria-label="No photo available">
+        <span class="pc-empty-text"><%= product.name %></span>
+      </div>
+    <% } %>
+  </a>
+  <div class="pc-body">
+    <% if (product.category) { %><span class="pc-cat"><%= product.category %></span><% } %>
+    <h3 class="pc-title"><a href="/products/<%= slug %>"><%= product.name %></a></h3>
+    <p class="pc-spec"><%= product.short_desc %></p>
+    <% if (product.price_from) { %><p class="pc-price">Starting from <%= product.price_from %> — request quote</p><% } %>
+    <div class="pc-actions">
+      <a href="/products/<%= slug %>" class="btn btn-steel-outline btn-sm">View Details</a>
+      <button type="button" class="btn btn-orange btn-sm" data-ga="add_to_enquiry" data-add-enquiry data-id="<%= product.id %>" data-name="<%= product.name %>" data-slug="<%= slug %>">
+        Get Quote
+      </button>
+    </div>
+    <a href="<%= waLink(product.name) %>" class="link-wa link-wa-quiet" target="_blank" rel="noopener" aria-label="WhatsApp about <%= product.name %>" data-ga="whatsapp">
+      <%- include('_icon', {name:'whatsapp', size:14}) %> WhatsApp
+    </a>
+  </div>
+</article>

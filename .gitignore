@@ -1,0 +1,15 @@
+node_modules/
+data/
+public/uploads/*
+!public/uploads/.gitkeep
+.env
+.env.local
+.env.prod
+logs/
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+.cursor/
+audit-screenshots/
+.review-shots/

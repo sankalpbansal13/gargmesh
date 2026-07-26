@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex,nofollow">
+  <title><%= title %></title>
+  <link rel="icon" href="/logo.png">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="admin-body">
+  <header class="admin-top">
+    <div class="container admin-top-inner">
+      <a href="/admin/dashboard" class="admin-brand">
+        <img src="/logo.png" alt="Garg Industrial Mesh" width="32" height="32">
+        <span>Admin · Garg Industrial Mesh</span>
+      </a>
+      <nav class="admin-nav">
+        <a href="/admin/dashboard">Dashboard</a>
+        <a href="/admin/products">Products</a>
+        <a href="/admin/products/new">Add Product</a>
+        <a href="/admin/enquiries">Enquiries</a>
+        <a href="/" target="_blank">View Site</a>
+        <a href="/admin/logout" class="admin-logout">Logout</a>
+      </nav>
+    </div>
+  </header>
+  <main class="admin-main container">
+    <h1>Dashboard</h1>
+    <% if (typeof flash !== 'undefined' && flash) { %><p class="form-success"><%= flash %></p><% } %>
+    <div class="admin-stats">
+      <a href="/admin/products" class="admin-stat">
+        <strong><%= productCount %></strong>
+        <span>Products</span>
+      </a>
+      <a href="/admin/enquiries" class="admin-stat">
+        <strong><%= enquiryCount %></strong>
+        <span>Enquiries</span>
+      </a>
+      <a href="/admin/products/new" class="admin-stat admin-stat-cta">
+        <strong>+</strong>
+        <span>Add New Product</span>
+      </a>
+    </div>
+    <section class="admin-card">
+      <h2>Recent Enquiries</h2>
+      <% if (recentEnquiries.length) { %>
+      <table class="admin-table">
+        <thead><tr><th>Name</th><th>Phone</th><th>Product</th><th>When</th></tr></thead>
+        <tbody>
+          <% recentEnquiries.forEach(function(e){ %>
+          <tr>
+            <td><%= e.name %></td>
+            <td><a href="tel:<%= e.phone %>"><%= e.phone %></a></td>
+            <td><%= e.product %></td>
+            <td><%= e.created_at %></td>
+          </tr>
+          <% }); %>
+        </tbody>
+      </table>
+      <% } else { %><p class="empty-state">No enquiries yet.</p><% } %>
+      <p><a href="/admin/enquiries">View all enquiries →</a></p>
+    </section>
+  </main>
+</body>
+</html>

@@ -1,0 +1,11 @@
+<% const stickyWa = typeof waText !== 'undefined' && waText ? waText : 'Hi Garg Industrial Mesh, I would like to know more about your products.'; %>
+<div class="sticky-bar" aria-label="Quick contact">
+  <a href="tel:<%= site.phone %>" class="sticky-half sticky-call" data-ga="call">
+    <%- include('_icon', {name:'phone', size:20, class:'sticky-ico'}) %>
+    <span>Call Now</span>
+  </a>
+  <a href="https://wa.me/<%= site.whatsapp %>?text=<%- encodeURIComponent(stickyWa) %>" class="sticky-half sticky-wa sticky-wa-quiet" target="_blank" rel="noopener" data-ga="whatsapp">
+    <%- include('_icon', {name:'whatsapp', size:20, class:'sticky-ico'}) %>
+    <span>WhatsApp</span>
+  </a>
+</div>

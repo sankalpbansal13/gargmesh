@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" fill="none" aria-hidden="true">
+  <!-- Angular G mark  5 cut panels for assemble animation -->
+  <g class="g-mark" fill="#FFFFFF">
+    <path class="g-panel g-panel-top" d="M18 10 L62 10 L62 22 L30 22 L18 34 Z"/>
+    <path class="g-panel g-panel-left" d="M18 10 L30 22 L30 58 L18 70 Z"/>
+    <path class="g-panel g-panel-bottom" d="M18 70 L30 58 L62 58 L62 70 Z"/>
+    <path class="g-panel g-panel-right" d="M50 40 L62 40 L62 70 L50 58 Z"/>
+    <path class="g-panel g-panel-spur" d="M38 40 L62 40 L62 52 L38 52 Z"/>
+  </g>
+</svg>

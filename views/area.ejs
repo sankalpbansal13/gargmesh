@@ -1,0 +1,126 @@
+<%- include('partials/_head', { meta_description: meta_description, extraLd: extraLd }) %>
+<%- include('partials/_header') %>
+
+<nav class="breadcrumb" aria-label="Breadcrumb">
+  <div class="container">
+    <a href="/">Home</a> › <a href="/areas">Areas We Serve</a> › <span><%= city %></span>
+  </div>
+</nav>
+
+<section class="page-head">
+  <div class="container">
+    <span class="eyebrow">Serving <%= city %></span>
+    <h1>Wire Mesh &amp; Perforated Sheet Supplier in <%= city %></h1>
+    <p><%= cityData.intro %></p>
+  </div>
+</section>
+
+<section class="section alt">
+  <div class="container">
+    <div class="section-head reveal">
+      <span class="eyebrow">In stock</span>
+      <h2>Products Available in <%= city %></h2>
+    </div>
+    <div class="product-grid reveal-stagger">
+      <% products.forEach(function(p){ %>
+        <%- include('partials/_productcard', {product: p}) %>
+      <% }); %>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container narrow">
+    <div class="section-head reveal" style="text-align:left;margin:0 0 var(--sp-5)">
+      <span class="eyebrow">Coverage in <%= city %></span>
+      <h2>Areas &amp; Sectors We Cover</h2>
+    </div>
+    <p><%= cityData.sectors %></p>
+    <h3 class="post-h2" style="margin-top:var(--sp-5)">Nearby Landmarks &amp; Industrial Zones</h3>
+    <p><%= cityData.landmarks %></p>
+    <h3 class="post-h2" style="margin-top:var(--sp-5)">Delivery in <%= city %></h3>
+    <p><%= cityData.delivery %></p>
+  </div>
+</section>
+
+<% if (localities && localities.length) { %>
+<section class="section alt">
+  <div class="container">
+    <div class="section-head reveal">
+      <span class="eyebrow">Hyper-local</span>
+      <h2>Localities We Serve in <%= city %></h2>
+      <p class="section-sub">Dedicated pages for industrial belts and residential hubs across <%= city %>.</p>
+    </div>
+    <div class="areas-grid reveal-stagger">
+      <% localities.forEach(function(s){ %>
+      <a href="/sectors/<%= s.slug %>" class="area-card">
+        <span class="area-ico"><%- include('partials/_icon', {name:'map-pin', size:24}) %></span>
+        <strong><%= s.locality || s.sector %></strong>
+        <span class="area-sub">Wire mesh supplier in <%= s.locality || s.sector %></span>
+      </a>
+      <% }); %>
+    </div>
+  </div>
+</section>
+<% } %>
+
+<section class="section<%= (localities && localities.length) ? '' : ' alt' %>">
+  <div class="container">
+    <div class="section-head reveal">
+      <span class="eyebrow">Why us</span>
+      <h2>Why Buy from Us in <%= city %>?</h2>
+    </div>
+    <div class="why-grid reveal-stagger">
+      <div class="why-item"><span class="why-ico"><%- include('partials/_icon', {name:'truck', size:26}) %></span><h3>Local Delivery</h3><p>Fast delivery across <%= city %> and nearby sectors.</p></div>
+      <div class="why-item"><span class="why-ico"><%- include('partials/_icon', {name:'tag', size:26}) %></span><h3>Wholesale Prices</h3><p>Direct manufacturer rates for bulk project orders.</p></div>
+      <div class="why-item"><span class="why-ico"><%- include('partials/_icon', {name:'phone', size:26}) %></span><h3>Quick Response</h3><p>Call or WhatsApp 9910238277 for instant quotes.</p></div>
+      <div class="why-item"><span class="why-ico"><%- include('partials/_icon', {name:'shield-check', size:26}) %></span><h3>Genuine Grades</h3><p>SS 201/304, GI, MS — quality you can verify.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="section<%= (localities && localities.length) ? ' alt' : '' %>">
+  <div class="container">
+    <div class="section-head reveal">
+      <span class="eyebrow">FAQ</span>
+      <h2><%= city %> — Frequently Asked Questions</h2>
+    </div>
+    <div class="accordion reveal">
+      <% cityData.faq.forEach(function(f){ %>
+      <div class="acc-item">
+        <button class="acc-head" aria-expanded="false"><span><%= f.q %></span><span class="acc-sign" aria-hidden="true"><%- include('partials/_icon', {name:'chevron-down', size:16}) %></span></button>
+        <div class="acc-body"><p><%= f.a %></p></div>
+      </div>
+      <% }); %>
+    </div>
+  </div>
+</section>
+
+<section class="final-cta">
+  <div class="container final-inner">
+    <div class="final-text reveal">
+      <span class="eyebrow">Get started</span>
+      <h2>Need mesh in <%= city %>?</h2>
+      <p>Get a free quote with price &amp; availability within minutes.</p>
+      <div class="final-contact">
+        <a href="tel:<%= site.phone %>" class="btn btn-orange" data-ga="call"><%- include('partials/_icon', {name:'phone', size:18}) %> Call <%= site.phone %></a>
+        <a href="https://wa.me/<%= site.whatsapp %>?text=<%= encodeURIComponent('Hi Garg Industrial Mesh, I need wire mesh in '+city+'. Please share price & availability.') %>" class="link-wa link-wa-light" target="_blank" rel="noopener" data-ga="whatsapp"><%- include('partials/_icon', {name:'whatsapp', size:16}) %> WhatsApp</a>
+      </div>
+    </div>
+    <form class="quote-form reveal" action="/enquiry" method="POST">
+      <input type="hidden" name="redirect" value="/areas/<%= cityData.slug %>?sent=1">
+      <input type="hidden" name="product" value="Enquiry from <%= city %> page">
+      <%- include('partials/_enquiry_guard', { hpId: 'area' }) %>
+      <span class="eyebrow">Request Quote</span>
+      <h3>Send Your Requirement</h3>
+      <input type="text" name="name" placeholder="Your name" required>
+      <input type="tel" name="phone" placeholder="Phone number" required>
+      <textarea name="message" placeholder="Product, grade, size, quantity..." rows="3"></textarea>
+      <button type="submit" class="btn btn-orange btn-block" data-ga="enquiry_submit">Send Enquiry</button>
+      <% if (typeof sent !== 'undefined' && sent) { %><p class="form-success">Thank you! We will contact you shortly.</p><% } %>
+    </form>
+  </div>
+</section>
+
+<%- include('partials/_stickybar') %>
+<%- include('partials/_footer') %>

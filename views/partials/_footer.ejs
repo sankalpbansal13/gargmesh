@@ -1,0 +1,88 @@
+</main>
+<% const fabWa = typeof waText !== 'undefined' && waText ? waText : 'Hi Garg Industrial Mesh, I would like to know more about your products.'; %>
+<a href="https://wa.me/<%= site.whatsapp %>?text=<%- encodeURIComponent(fabWa) %>" class="fab-wa" target="_blank" rel="noopener" aria-label="Chat on WhatsApp" data-ga="whatsapp">
+  <%- include('_icon', {name:'whatsapp', size:20}) %>
+</a>
+
+<!-- Enquiry cart button (floating) -->
+<button type="button" class="fab-cart" id="fabCart" aria-label="View enquiry list" data-ga="view_enquiry">
+  <%- include('_icon', {name:'package', size:24}) %>
+  <span class="fab-cart-badge" id="cartBadge">0</span>
+</button>
+
+<!-- Back to top -->
+<button type="button" class="back-to-top" id="backToTop" aria-label="Back to top">
+  <%- include('_icon', {name:'chevron-right', size:22}) %>
+</button>
+
+<!-- Enquiry cart drawer -->
+<div class="cart-backdrop" id="cartBackdrop"></div>
+<aside class="cart-drawer" id="cartDrawer" aria-label="Enquiry list" aria-hidden="true">
+  <div class="cart-head">
+    <strong>Your Enquiry List</strong>
+    <button type="button" class="drawer-close" id="cartClose" aria-label="Close enquiry list">&times;</button>
+  </div>
+  <div class="cart-body" id="cartBody">
+    <p class="cart-empty" id="cartEmpty">No products added yet. Tap "Add to Enquiry" on any product to build a single quote request.</p>
+  </div>
+  <div class="cart-foot" id="cartFoot" style="display:none">
+    <a href="#" class="btn btn-wa btn-block" id="cartSendWa" target="_blank" rel="noopener">
+      <%- include('_icon', {name:'whatsapp', size:18}) %> Send all via WhatsApp
+    </a>
+    <button type="button" class="btn btn-navy-outline btn-block" id="cartClear" style="margin-top:8px">Clear list</button>
+  </div>
+</aside>
+
+<footer class="site-footer">
+  <div class="container footer-grid">
+    <div class="footer-col">
+      <a href="/" class="footer-logo">
+        <img class="logo-img logo-img-sm" src="/logo-white.png" alt="Garg Industrial Mesh" width="180" height="42" decoding="async">
+      </a>
+      <p class="footer-tag">Manufacturer &amp; supplier of industrial wire mesh, perforated sheets and safety spikes in Noida &amp; Delhi NCR.</p>
+      <p class="footer-meta">SECTOR 9, NOIDA · DELHI NCR</p>
+    </div>
+    <div class="footer-col">
+      <h3>Contact</h3>
+      <p class="fc-line"><%- include('_icon', {name:'map-pin', size:16, class:'fc-ico'}) %><%= site.address %></p>
+      <p class="fc-line"><a href="tel:<%= site.phone %>"><%- include('_icon', {name:'phone', size:16, class:'fc-ico'}) %><%= site.phone %></a></p>
+      <p class="fc-line"><a href="https://wa.me/<%= site.whatsapp %>" target="_blank" rel="noopener"><%- include('_icon', {name:'whatsapp', size:16, class:'fc-ico'}) %>WhatsApp</a></p>
+      <p class="fc-line"><%- include('_icon', {name:'clock', size:16, class:'fc-ico'}) %><%= site.hours %></p>
+      <p class="footer-gst"><%- include('_gst_badge', { iconSize: 16 }) %></p>
+    </div>
+    <div class="footer-col">
+      <h3>Products</h3>
+      <ul class="footer-links">
+        <li><a href="/products?category=Welded%20Mesh">Welded Mesh</a></li>
+        <li><a href="/products?category=Perforated%20Sheet">Perforated Sheet</a></li>
+        <li><a href="/products?category=Wire%20Mesh">Wire Mesh</a></li>
+        <li><a href="/products?category=Fencing%20Mesh">Fencing Mesh</a></li>
+        <li><a href="/products?category=Protection%20Mesh">Protection Mesh</a></li>
+        <li><a href="/products?category=Safety%20Net">Safety Net</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h3>Company</h3>
+      <ul class="footer-links">
+        <li><a href="/about">About Us</a></li>
+        <li><a href="/areas">Areas We Serve</a></li>
+        <li><a href="/areas#browse-localities">Browse by Locality</a></li>
+        <li><a href="/contact">Contact</a></li>
+        <li><a href="/blog">Blog</a></li>
+        <li><a href="/sitemap.xml">Sitemap</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-map">
+    <iframe title="Garg Industrial Mesh — G-25, G Block, Sector 9, Noida location map" src="https://www.google.com/maps?q=<%= encodeURIComponent(site.address) %>&output=embed" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+    <a class="footer-map-link" href="https://www.google.com/maps/dir/?api=1&destination=<%= encodeURIComponent(site.address) %>" target="_blank" rel="noopener" data-ga="get_directions"><%- include('_icon', {name:'map-pin', size:16}) %> Get Directions to G-25, G Block, Sector 9, Noida</a>
+  </div>
+  <div class="footer-bottom">
+    <div class="container">
+      <p>© <%= site.year %> <%= site.name %>. All rights reserved.</p>
+    </div>
+  </div>
+</footer>
+<script src="/js/main.js?v=20260723c"></script>
+</body>
+</html>

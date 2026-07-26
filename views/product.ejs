@@ -1,0 +1,230 @@
+<%
+const meta_description = product.meta_description;
+const meta_keywords = product.meta_keywords;
+const breadcrumb = {
+  "@context":"https://schema.org","@type":"BreadcrumbList",
+  "itemListElement":[
+    {"@type":"ListItem","position":1,"name":"Home","item":site.url},
+    {"@type":"ListItem","position":2,"name":"Products","item":site.url+"/products"},
+    {"@type":"ListItem","position":3,"name":product.name,"item":site.url+"/products/"+product.slug}
+  ]
+};
+// Extract a numeric starting price (e.g. "₹85/sqft" -> "85") for schema; omit Offer when unknown.
+const priceMatch = (product.price_from || '').match(/(\d+(?:\.\d+)?)/);
+const productLd = {
+  "@context":"https://schema.org","@type":"Product",
+  "name":product.name,
+  "description":product.short_desc,
+  "category":product.category,
+  "url":site.url+"/products/"+product.slug,
+  "brand":{"@type":"Brand","name":"GARG INDUSTRIAL MESH"}
+};
+if (priceMatch) {
+  productLd.offers = {"@type":"Offer","price":priceMatch[1],"priceCurrency":"INR","availability":"https://schema.org/InStock","seller":{"@type":"Organization","name":"GARG INDUSTRIAL MESH"}};
+}
+// AggregateRating placeholder — DISABLED until real Google reviews exist.
+// To enable: set site.showReviews = true (or a per-product rating) and uncomment the block below.
+/*
+if (product.rating_value && product.review_count) {
+  productLd.aggregateRating = {"@type":"AggregateRating","ratingValue":product.rating_value,"reviewCount":product.review_count,"bestRating":"5","worstRating":"1"};
+}
+*/
+const faqLd = faqs.length ? {"@context":"https://schema.org","@type":"FAQPage","mainEntity":faqs.map(f=>({"@type":"Question","name":f.q,"acceptedAnswer":{"@type":"Answer","text":f.a}}))} : null;
+%>
+<% const extraLd = faqLd ? [breadcrumb, productLd, faqLd] : [breadcrumb, productLd]; %>
+<%- include('partials/_head', { meta_description: meta_description, meta_keywords: meta_keywords, extraLd: extraLd }) %>
+<%- include('partials/_header') %>
+
+<nav class="breadcrumb" aria-label="Breadcrumb">
+  <div class="container">
+    <a href="/">Home</a> › <a href="/products">Products</a> › <span><%= product.name %></span>
+  </div>
+</nav>
+
+<section class="product-detail">
+  <div class="container pd-grid">
+    <div class="pd-gallery">
+      <% if (images.length) { %>
+      <div class="slider" id="slider">
+        <div class="slider-track">
+          <% images.forEach(function(img, i){ %>
+          <div class="slider-slide">
+            <img src="/uploads/<%= img.filename %>" alt="<%= img.alt_text || (product.name + ' — Garg Industrial Mesh Noida') %>" loading="<%= i===0?'eager':'lazy' %>"<% if (img.width && img.height) { %> width="<%= img.width %>" height="<%= img.height %>"<% } %>>
+          </div>
+          <% }); %>
+        </div>
+        <% if (images.length > 1) { %>
+        <button type="button" class="slider-btn slider-prev" aria-label="Previous photo"><%- include('partials/_icon', {name:'chevron-left', size:22}) %></button>
+        <button type="button" class="slider-btn slider-next" aria-label="Next photo"><%- include('partials/_icon', {name:'chevron-right', size:22}) %></button>
+        <div class="slider-dots">
+          <% images.forEach(function(img, i){ %>
+          <button type="button" class="slider-dot <%= i===0?'active':'' %>" aria-label="Go to photo <%= i+1 %>"></button>
+          <% }); %>
+        </div>
+        <% } %>
+      </div>
+      <% if (images.length > 1) { %>
+      <div class="pd-thumbs" id="pdThumbs" role="tablist" aria-label="Product photos">
+        <% images.forEach(function(img, i){ %>
+        <button type="button" class="pd-thumb <%= i===0?'active':'' %>" data-index="<%= i %>" aria-label="Show photo <%= i+1 %>" aria-selected="<%= i===0?'true':'false' %>">
+          <img src="/uploads/<%= img.filename %>" alt="" loading="lazy" width="64" height="64">
+        </button>
+        <% }); %>
+      </div>
+      <% } %>
+      <% } else { %>
+      <div class="gallery-empty-lg">
+        <span class="ge-title"><%= product.name %></span>
+      </div>
+      <% } %>
+    </div>
+
+    <div class="pd-info">
+      <span class="eyebrow"><%= product.category %></span>
+      <h1><%= product.name %></h1>
+      <p class="pd-short"><%= product.short_desc %></p>
+
+      <% if (product.price_from) { %>
+      <div class="pd-price">
+        <strong>Starting from <%= product.price_from %></strong>
+        <span>Request a quote for exact pricing on your grade &amp; quantity</span>
+      </div>
+      <% } %>
+
+      <% if (product.grades) { %>
+      <div class="pd-variant">
+        <label for="variantSelect">Grade / Variant</label>
+        <select id="variantSelect">
+          <% product.grades.split(',').map(g=>g.trim()).filter(Boolean).forEach(function(g){ %>
+          <option value="<%= g %>"><%= g %></option>
+          <% }); %>
+        </select>
+      </div>
+      <% } %>
+
+      <div class="pd-key-specs">
+        <% if (product.materials) { %><div><span>Materials</span> <%= product.materials %></div><% } %>
+        <% if (product.sizes) { %><div><span>Sizes</span> <%= product.sizes %></div><% } %>
+        <% if (product.grades) { %><div><span>Grades</span> <%= product.grades %></div><% } %>
+      </div>
+
+      <div class="pd-cta">
+        <a href="#enquire" class="btn btn-orange" data-ga="quote">Get Quote</a>
+        <a href="tel:<%= site.phone %>" class="btn btn-navy-outline" data-ga="call"><%- include('partials/_icon', {name:'phone', size:18}) %> Call <%= site.phone %></a>
+      </div>
+      <div class="pd-cta-secondary">
+        <button type="button" class="btn btn-orange-outline btn-sm pd-add" data-ga="add_to_enquiry" data-add-enquiry data-id="<%= product.id %>" data-name="<%= product.name %>" data-slug="<%= product.slug %>">
+          Add to Enquiry
+        </button>
+        <a href="<%= waLink(product.name) %>" class="link-wa" target="_blank" rel="noopener" data-ga="whatsapp"><%- include('partials/_icon', {name:'whatsapp', size:14}) %> WhatsApp</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section alt">
+  <div class="container">
+    <div class="section-head reveal">
+      <span class="eyebrow">Details</span>
+      <h2>About <%= product.name %></h2>
+    </div>
+    <% if (product.description) { %>
+    <p class="pd-description reveal"><%= product.description %></p>
+    <% } %>
+    <div class="section-head reveal" style="margin-top:var(--sp-6)">
+      <h2 style="font-size:clamp(1.25rem,2vw,1.5rem)">Full Specifications</h2>
+    </div>
+    <table class="spec-table reveal">
+      <tbody>
+        <tr><th>Product</th><td><%= product.name %></td></tr>
+        <tr><th>Category</th><td><%= product.category %></td></tr>
+        <% if (product.materials) { %><tr><th>Materials</th><td><%= product.materials %></td></tr><% } %>
+        <% if (product.sizes) { %><tr><th>Sizes Available</th><td><%= product.sizes %></td></tr><% } %>
+        <% if (product.grades) { %><tr><th>Grades / Variants</th><td><%= product.grades %></td></tr><% } %>
+        <% if (product.applications) { %><tr><th>Applications</th><td><%= product.applications %></td></tr><% } %>
+        <% if (product.price_from) { %><tr><th>Indicative Price</th><td>Starting from <%= product.price_from %> (request quote)</td></tr><% } %>
+        <tr><th>Supplier</th><td>Garg Industrial Mesh, Noida — serving Delhi NCR</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<% if (product.applications) { %>
+<section class="section">
+  <div class="container">
+    <div class="section-head reveal">
+      <span class="eyebrow">Use cases</span>
+      <h2>Applications of <%= product.name %></h2>
+    </div>
+    <ul class="app-list reveal-stagger">
+      <% product.applications.split(',').map(a=>a.trim()).filter(Boolean).forEach(function(a){ %>
+      <li><%- include('partials/_icon', {name:'check-circle', size:20}) %><%= a %></li>
+      <% }); %>
+    </ul>
+  </div>
+</section>
+<% } %>
+
+<section class="section alt" id="enquire">
+  <div class="container enquiry-wrap">
+    <div class="enquiry-info reveal">
+      <span class="eyebrow">Enquire</span>
+      <h2>Enquire about <%= product.name %></h2>
+      <p>Fill the form or message us directly. We reply within minutes during business hours.</p>
+      <p class="enq-line"><%- include('partials/_icon', {name:'phone', size:18}) %><a class="enq-phone" href="tel:<%= site.phone %>"><%= site.phone %></a></p>
+      <p class="enq-line"><%- include('partials/_icon', {name:'map-pin', size:18}) %><%= site.address %></p>
+      <p class="enq-line"><%- include('partials/_icon', {name:'clock', size:18}) %><%= site.hours %></p>
+    </div>
+    <form class="quote-form reveal" action="/enquiry" method="POST">
+      <input type="hidden" name="redirect" value="/products/<%= product.slug %>?sent=1">
+      <input type="hidden" name="product" value="<%= product.name %>">
+      <%- include('partials/_enquiry_guard', { hpId: 'product' }) %>
+      <span class="eyebrow">Get a quote</span>
+      <h3>Request Price &amp; Availability</h3>
+      <input type="text" name="name" placeholder="Your name" required>
+      <input type="tel" name="phone" placeholder="Phone number" required>
+      <input type="email" name="email" placeholder="Email (optional)">
+      <textarea name="message" placeholder="Grade, size, quantity..." rows="3" data-product="<%= product.name %>">I'm interested in <%= product.name %>. Please share price &amp; availability.</textarea>
+      <button type="submit" class="btn btn-orange btn-block"><%- include('partials/_icon', {name:'send', size:18}) %> Send Enquiry</button>
+      <% if (typeof sent !== 'undefined' && sent) { %><p class="form-success">Thank you! We will contact you shortly.</p><% } %>
+    </form>
+  </div>
+</section>
+
+<% if (faqs.length) { %>
+<section class="section alt">
+  <div class="container">
+    <div class="section-head reveal">
+      <span class="eyebrow">FAQ</span>
+      <h2><%= product.name %> — Frequently Asked Questions</h2>
+    </div>
+    <div class="accordion reveal">
+      <% faqs.forEach(function(f){ %>
+      <div class="acc-item">
+        <button class="acc-head" aria-expanded="false"><span><%= f.q %></span><span class="acc-sign" aria-hidden="true"><%- include('partials/_icon', {name:'chevron-down', size:16}) %></span></button>
+        <div class="acc-body"><p><%= f.a %></p></div>
+      </div>
+      <% }); %>
+    </div>
+  </div>
+</section>
+<% } %>
+
+<% if (related.length) { %>
+<section class="section">
+  <div class="container">
+    <div class="section-head reveal">
+      <span class="eyebrow">More options</span>
+      <h2>Related Products</h2>
+    </div>
+    <div class="product-grid reveal-stagger">
+      <% related.forEach(function(p){ %>
+        <%- include('partials/_productcard', {product: p}) %>
+      <% }); %>
+    </div>
+  </div>
+</section>
+<% } %>
+
+<%- include('partials/_stickybar') %>
+<%- include('partials/_footer') %>

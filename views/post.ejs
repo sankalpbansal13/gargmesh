@@ -1,0 +1,85 @@
+<%- include('partials/_head', { meta_description: meta_description, meta_keywords: meta_keywords, extraLd: extraLd }) %>
+<%- include('partials/_header') %>
+
+<nav class="breadcrumb" aria-label="Breadcrumb">
+  <div class="container">
+    <a href="/">Home</a> › <a href="/blog">Blog</a> › <span><%= post.title %></span>
+  </div>
+</nav>
+
+<section class="section">
+  <div class="container">
+    <article class="post-article">
+      <a href="/blog" class="post-back"><%- include('partials/_icon', {name:'chevron-left', size:18}) %> All articles</a>
+      <div class="post-meta">
+        <span class="blog-date"><%= post.date %></span>
+        <span class="post-author">By <%= post.author || 'Garg Industrial Mesh Team' %></span>
+      </div>
+      <h1><%= post.title %></h1>
+      <p class="post-excerpt"><%= post.excerpt %></p>
+
+      <% if (post.tldr && post.tldr.length) { %>
+      <div class="post-tldr">
+        <span class="eyebrow">Key takeaways</span>
+        <ul>
+          <% post.tldr.forEach(function(t){ %>
+            <li><%= t %></li>
+          <% }); %>
+        </ul>
+      </div>
+      <% } %>
+
+      <div class="post-body">
+        <%- bodyHtml %>
+      </div>
+
+      <% if (post.faq && post.faq.length) { %>
+      <div class="post-faq">
+        <span class="eyebrow">People also ask</span>
+        <h2 class="post-h2">Frequently asked questions</h2>
+        <div class="accordion">
+          <% post.faq.forEach(function(f, idx){ %>
+          <div class="acc-item">
+            <button class="acc-head" aria-expanded="false" aria-controls="faq-<%= idx %>">
+              <span><%= f.q %></span>
+              <%- include('partials/_icon', {name:'chevron-down', size:20}) %>
+            </button>
+            <div class="acc-body" id="faq-<%= idx %>"><p><%= f.a %></p></div>
+          </div>
+          <% }); %>
+        </div>
+      </div>
+      <% } %>
+
+      <div class="post-cta">
+        <span class="eyebrow">Need this product?</span>
+        <h2>Get a free quote from Garg Industrial Mesh</h2>
+        <p style="color:var(--muted);margin-bottom:var(--sp-4)">Call or WhatsApp us for price &amp; availability within minutes.</p>
+        <div class="contact-cta" style="justify-content:center">
+          <a href="tel:<%= site.phone %>" class="btn btn-orange" data-ga="call"><%- include('partials/_icon', {name:'phone', size:18}) %> Call <%= site.phone %></a>
+          <a href="https://wa.me/<%= site.whatsapp %>?text=Hi%20Garg%20Industrial%20Mesh%2C%20I%20just%20read%20your%20article%20%22<%= encodeURIComponent(post.title) %>%22%20and%20would%20like%20a%20quote." class="btn btn-wa" target="_blank" rel="noopener" data-ga="whatsapp"><%- include('partials/_icon', {name:'whatsapp', size:18}) %> WhatsApp</a>
+        </div>
+      </div>
+
+      <% if (related && related.length) { %>
+      <div class="post-related">
+        <span class="eyebrow">Keep reading</span>
+        <h3>More from the blog</h3>
+        <div class="blog-list" style="grid-template-columns:1fr;max-width:none">
+          <% related.forEach(function(p){ %>
+          <article class="blog-card">
+            <span class="blog-date"><%= p.date %></span>
+            <h2 style="font-size:1.125rem"><a href="/blog/<%= p.slug %>"><%= p.title %></a></h2>
+            <p style="font-size:.9375rem"><%= p.excerpt %></p>
+            <a href="/blog/<%= p.slug %>" class="read-more">Read more <%- include('partials/_icon', {name:'arrow-right', size:16}) %></a>
+          </article>
+          <% }); %>
+        </div>
+      </div>
+      <% } %>
+    </article>
+  </div>
+</section>
+
+<%- include('partials/_stickybar') %>
+<%- include('partials/_footer') %>

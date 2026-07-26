@@ -1,0 +1,61 @@
+<% const meta_description = "Contact Garg Industrial Mesh, G-25, G Block, Sector 9, Noida 201301. Call/WhatsApp 9910238277. Wire mesh & perforated sheet supplier across Delhi NCR. Mon–Sat 9:30 AM–7:30 PM."; %>
+<%- include('partials/_head', { meta_description: meta_description, extraLd: extraLd }) %>
+<%- include('partials/_header') %>
+
+<section class="page-head">
+  <div class="container">
+    <span class="eyebrow">Contact</span>
+    <h1>Contact Garg Industrial Mesh</h1>
+    <p>Reach us by phone, WhatsApp or the form below. We reply within minutes during business hours.</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container contact-grid">
+    <div class="contact-info reveal">
+      <span class="eyebrow">Get in touch</span>
+      <h2>Visit or Call Us</h2>
+      <p class="enq-line"><%- include('partials/_icon', {name:'map-pin', size:18}) %><span><strong>Address</strong><br><%= site.address %></span></p>
+      <p class="enq-line"><%- include('partials/_icon', {name:'phone', size:18}) %><span><strong>Phone / WhatsApp</strong><br><a href="tel:<%= site.phone %>"><%= site.phone %></a> · <a href="https://wa.me/<%= site.whatsapp %>" target="_blank" rel="noopener">WhatsApp chat</a></span></p>
+      <p class="enq-line"><%- include('partials/_icon', {name:'clock', size:18}) %><span><strong>Business Hours</strong><br><%= site.hours %></span></p>
+      <p class="enq-line"><%- include('partials/_icon', {name:'shield-check', size:18}) %><span class="footer-gst"><%- include('partials/_gst_badge', { iconSize: 18 }) %></span></p>
+      <div class="contact-cta">
+        <a href="tel:<%= site.phone %>" class="btn btn-orange"><%- include('partials/_icon', {name:'phone', size:18}) %> Call Now</a>
+        <a href="https://wa.me/<%= site.whatsapp %>" class="link-wa" target="_blank" rel="noopener"><%- include('partials/_icon', {name:'whatsapp', size:16}) %> WhatsApp</a>
+      </div>
+    </div>
+    <form class="quote-form reveal" action="/enquiry" method="POST">
+      <input type="hidden" name="redirect" value="/contact?sent=1">
+      <%- include('partials/_enquiry_guard', { hpId: 'contact' }) %>
+      <span class="eyebrow">Send a message</span>
+      <h3>Send Us a Message</h3>
+      <input type="text" name="name" placeholder="Your name" required>
+      <input type="tel" name="phone" placeholder="Phone number" required>
+      <input type="email" name="email" placeholder="Email (optional)">
+      <input type="text" name="product" placeholder="Product / requirement">
+      <textarea name="message" placeholder="Your message..." rows="4"></textarea>
+      <button type="submit" class="btn btn-orange btn-block" data-ga="enquiry_submit"><%- include('partials/_icon', {name:'send', size:18}) %> Send Enquiry</button>
+      <% if (typeof sent !== 'undefined' && sent) { %><p class="form-success">Thank you! We will contact you shortly.</p><% } %>
+    </form>
+  </div>
+</section>
+
+<section class="section alt">
+  <div class="container">
+    <div class="section-head reveal">
+      <span class="eyebrow">Location</span>
+      <h2>Find Us on the Map</h2>
+    </div>
+    <div class="map-wrap reveal">
+      <iframe title="Garg Industrial Mesh — G-25, G Block, Sector 9, Noida location map" src="https://www.google.com/maps?q=<%= encodeURIComponent(site.address) %>&output=embed" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+      <p class="map-fallback">Map not loading? <a href="https://www.google.com/maps?q=<%= encodeURIComponent(site.address) %>" target="_blank" rel="noopener">Open G-25, G Block, Sector 9, Noida on Google Maps</a></p>
+    </div>
+    <div class="map-actions">
+      <a class="btn btn-orange" href="https://www.google.com/maps/dir/?api=1&destination=<%= encodeURIComponent(site.address) %>" target="_blank" rel="noopener" data-ga="get_directions"><%- include('partials/_icon', {name:'map-pin', size:18}) %> Get Directions</a>
+      <a class="btn btn-navy-outline" href="https://www.google.com/maps?q=<%= encodeURIComponent(site.address) %>" target="_blank" rel="noopener">View on Google Maps</a>
+    </div>
+  </div>
+</section>
+
+<%- include('partials/_stickybar') %>
+<%- include('partials/_footer') %>

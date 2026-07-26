@@ -1,0 +1,23 @@
+# Production-only stack for Garg Industrial Mesh
+services:
+  web:
+    build: .
+    container_name: gargmesh-web
+    env_file:
+      - .env.prod
+    ports:
+      - "${PORT:-3000}:3000"
+    volumes:
+      - gargmesh-data:/app/data
+      - gargmesh-uploads:/app/public/uploads
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:3000/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+volumes:
+  gargmesh-data:
+  gargmesh-uploads:

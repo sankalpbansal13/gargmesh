@@ -1,0 +1,45 @@
+<% const meta_description = "Garg Industrial Mesh blog — practical guides on choosing wire mesh, perforated sheets, chain link fence and safety spikes for projects in Noida and Delhi NCR."; %>
+<%- include('partials/_head', { meta_description: meta_description }) %>
+<%- include('partials/_header') %>
+
+<section class="page-head">
+  <div class="container">
+    <span class="eyebrow">Guides &amp; tips</span>
+    <h1>Blog — Mesh Guides &amp; Tips</h1>
+    <p>Practical guides to help you choose the right wire mesh, perforated sheet or safety spike for your project in Noida and Delhi NCR.</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <% if (posts && posts.length) { %>
+    <div class="blog-list reveal-stagger">
+      <% posts.forEach(function(p){ %>
+      <article class="blog-card">
+        <span class="blog-date"><%= p.date %></span>
+        <h2><a href="/blog/<%= p.slug %>"><%= p.title %></a></h2>
+        <p><%= p.excerpt %></p>
+        <a href="/blog/<%= p.slug %>" class="read-more">Read more <%- include('partials/_icon', {name:'arrow-right', size:16}) %></a>
+      </article>
+      <% }); %>
+    </div>
+    <% if (totalPages > 1) { %>
+    <nav class="pagination" aria-label="Blog pagination">
+      <span class="page-info">Page <%= currentPage %> of <%= totalPages %> (<%= total %> articles)</span>
+      <div class="page-links">
+        <% if (currentPage > 1) { %><a class="btn btn-outline" href="/blog?page=<%= currentPage - 1 %>">‹ Prev</a><% } %>
+        <% for (let i = 1; i <= totalPages; i++) { %>
+          <% if (i === currentPage) { %><span class="page-current"><%= i %></span><% } else { %><a class="page-num" href="/blog?page=<%= i %>"><%= i %></a><% } %>
+        <% } %>
+        <% if (currentPage < totalPages) { %><a class="btn btn-outline" href="/blog?page=<%= currentPage + 1 %>">Next ›</a><% } %>
+      </div>
+    </nav>
+    <% } %>
+    <% } else { %>
+      <p class="empty-state">No articles yet — coming soon. Meanwhile, <a href="/contact">ask us anything</a> — we reply within minutes.</p>
+    <% } %>
+  </div>
+</section>
+
+<%- include('partials/_stickybar') %>
+<%- include('partials/_footer') %>

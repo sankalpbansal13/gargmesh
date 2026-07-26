@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex,nofollow">
+  <title><%= title %></title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="apple-touch-icon" href="/logo.png">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="admin-body">
+  <header class="admin-top">
+    <div class="container admin-top-inner">
+      <a href="/admin/dashboard" class="admin-brand">
+        <img src="/logo.png" alt="Garg Industrial Mesh" width="32" height="32">
+        <span>Admin · Garg Industrial Mesh</span>
+      </a>
+      <nav class="admin-nav">
+        <a href="/admin/dashboard">Dashboard</a>
+        <a href="/admin/products">Products</a>
+        <a href="/admin/products/new">Add Product</a>
+        <a href="/admin/enquiries">Enquiries</a>
+        <a href="/" target="_blank">View Site</a>
+        <a href="/admin/logout" class="admin-logout">Logout</a>
+      </nav>
+    </div>
+  </header>
+  <main class="admin-main container">
+    <h1>Manage Products</h1>
+    <% if (typeof flash !== 'undefined' && flash) { %><p class="form-success"><%= flash %></p><% } %>
+    <p style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+      <a href="/admin/products/new" class="btn btn-orange btn-sm">+ Add New Product</a>
+      <a href="/admin/products?deleted=1" class="btn btn-navy-outline btn-sm">View Deleted</a>
+    </p>
+    <form class="admin-filter" method="GET" action="/admin/products">
+      <input type="hidden" name="deleted" value="<%= showDeleted?'1':'' %>">
+      <input type="text" name="q" value="<%= q||'' %>" placeholder="Search product name...">
+      <select name="category">
+        <option value="">All categories</option>
+        <% categories.forEach(function(c){ %><option value="<%= c %>" <%= cat===c?'selected':'' %>><%= c %></option><% }); %>
+      </select>
+      <button type="submit" class="btn btn-navy-outline btn-sm">Filter</button>
+      <a href="/admin/products" class="btn btn-navy-outline btn-sm">Clear</a>
+    </form>
+    <section class="admin-card">
+      <table class="admin-table">
+        <thead><tr><th>Name</th><th>Category</th><th>Price</th><th>Featured</th><th>Actions</th></tr></thead>
+        <tbody>
+          <% products.forEach(function(p){ %>
+          <tr>
+            <td>
+              <a href="/products/<%= p.slug %>" target="_blank"><%= p.name %></a>
+              <% if (p.deleted) { %><span class="cover-badge" style="position:static;background:#a8281c">Deleted</span><% } %>
+            </td>
+            <td><%= p.category %></td>
+            <td>
+              <form action="/admin/products/<%= p.id %>/price" method="POST" class="price-quick-form">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <input type="hidden" name="redirect" value="/admin/products<%= showDeleted?'?deleted=1':'' %><%= q ? (showDeleted?'&':'?')+'q='+encodeURIComponent(q) : '' %>">
+                <input type="text" name="price_from" value="<%= p.price_from||'' %>" placeholder="e.g. ₹120/sqft" aria-label="Price for <%= p.name %>" class="price-quick-input">
+                <button type="submit" class="btn btn-orange btn-sm">Save</button>
+              </form>
+            </td>
+            <td><%= p.featured ? '★' : '' %></td>
+            <td class="admin-row-actions">
+              <a href="/admin/products/<%= p.id %>/edit" class="btn btn-navy-outline btn-sm">Edit</a>
+              <form action="/admin/products/<%= p.id %>/duplicate" method="POST" style="display:inline">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <button type="submit" class="btn btn-navy-outline btn-sm" title="Duplicate">Duplicate</button>
+              </form>
+              <% if (!p.deleted) { %>
+              <form action="/admin/products/<%= p.id %>?_method=DELETE" method="POST" onsubmit="return confirm('Move this product to deleted? (Restore anytime.)');">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <button type="submit" class="btn btn-orange btn-sm">Delete</button>
+              </form>
+              <% } else { %>
+              <form action="/admin/products/<%= p.id %>/restore" method="POST" style="display:inline">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <button type="submit" class="btn btn-navy-outline btn-sm">Restore</button>
+              </form>
+              <form action="/admin/products/<%= p.id %>/permdelete" method="POST" onsubmit="return confirm('PERMANENTLY delete this product and its photos? This cannot be undone.');">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <button type="submit" class="btn btn-orange btn-sm">Permanent</button>
+              </form>
+              <% } %>
+            </td>
+          </tr>
+          <% }); %>
+          <% if (!products.length) { %><tr><td colspan="5"><p class="empty-state" style="border:none;padding:24px">No products found.</p></td></tr><% } %>
+        </tbody>
+      </table>
+    </section>
+  </main>
+</body>
+</html>

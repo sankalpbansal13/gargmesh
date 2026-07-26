@@ -1,0 +1,59 @@
+<% const meta_description = "Areas we serve — Garg Industrial Mesh supplies wire mesh, perforated sheets and safety spikes across Noida, Greater Noida, Delhi, Ghaziabad, Faridabad and Gurugram. Same-day dispatch."; %>
+<%- include('partials/_head', { meta_description: meta_description }) %>
+<%- include('partials/_header') %>
+
+<section class="page-head">
+  <div class="container">
+    <span class="eyebrow">Coverage</span>
+    <h1>Areas We Serve</h1>
+    <p>Garg Industrial Mesh supplies wire mesh, perforated sheets, fencing and safety spikes across Noida, Greater Noida, Delhi and the entire NCR. Choose your city or browse hyper-local locality pages for product-specific delivery details.</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="section-head reveal">
+      <span class="eyebrow">Cities</span>
+      <h2>City Pages</h2>
+    </div>
+    <div class="areas-grid reveal-stagger">
+      <% cities.forEach(function(c){ %>
+      <a href="/areas/<%= slugify(c) %>" class="area-card">
+        <span class="area-ico"><%- include('partials/_icon', {name:'map-pin', size:24}) %></span>
+        <strong><%= c %></strong>
+        <span class="area-sub">Mesh supplier in <%= c %> — view products &amp; delivery</span>
+      </a>
+      <% }); %>
+    </div>
+  </div>
+</section>
+
+<section class="section alt" id="browse-localities">
+  <div class="container">
+    <div class="section-head reveal">
+      <span class="eyebrow">Browse by locality</span>
+      <h2>Hyper-local Pages Across Delhi NCR</h2>
+      <p class="section-sub">Industrial belts, residential sectors and commercial hubs — unique landing pages for long-tail local search.</p>
+    </div>
+    <% localityGroups.forEach(function(g){ %>
+    <div class="reveal" style="margin-bottom:var(--sp-7)">
+      <h3 class="post-h2" style="margin-bottom:var(--sp-4)">
+        <a href="/areas/<%= g.citySlug %>" style="color:inherit;text-decoration:none"><%= g.city %></a>
+        <span style="font-weight:400;font-size:0.85em;opacity:0.7"> · <%= g.localities.length %> localities</span>
+      </h3>
+      <div class="areas-grid reveal-stagger">
+        <% g.localities.forEach(function(s){ %>
+        <a href="/sectors/<%= s.slug %>" class="area-card">
+          <span class="area-ico"><%- include('partials/_icon', {name:'map-pin', size:24}) %></span>
+          <strong><%= s.locality || s.sector %></strong>
+          <span class="area-sub">Wire mesh supplier in <%= s.locality || s.sector %>, <%= s.city %></span>
+        </a>
+        <% }); %>
+      </div>
+    </div>
+    <% }); %>
+  </div>
+</section>
+
+<%- include('partials/_stickybar') %>
+<%- include('partials/_footer') %>

@@ -1,0 +1,7 @@
+<% if (site.gstLabel) { %>
+<span class="gst-line"><%= site.gstLabel %></span>
+<% } %>
+<span class="gst-badge" title="GST registered business">
+  <%- include('_icon', {name:'shield-check', size: typeof iconSize !== 'undefined' ? iconSize : 15, class: 'gst-badge-ico'}) %>
+  GST Verified
+</span>

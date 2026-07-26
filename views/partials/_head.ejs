@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  <% if (typeof meta_description !== 'undefined') { %><meta name="description" content="<%= meta_description %>"><% } %>
+  <% if (typeof meta_keywords !== 'undefined') { %><meta name="keywords" content="<%= meta_keywords %>"><% } %>
+  <link rel="canonical" href="<%= site.url %><%= path %>">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="<%= title %>">
+  <meta property="og:description" content="<%= typeof meta_description !== 'undefined' ? meta_description : 'Garg Industrial Mesh — wire mesh & perforated sheet supplier in Noida.' %>">
+  <meta property="og:url" content="<%= site.url %><%= path %>">
+  <meta property="og:site_name" content="<%= site.name %>">
+  <meta property="og:image" content="<%= site.url %>/logo.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="<%= title %>">
+  <meta name="twitter:description" content="<%= typeof meta_description !== 'undefined' ? meta_description : 'Garg Industrial Mesh — Noida' %>">
+  <meta name="theme-color" content="#0D0D0D">
+  <meta name="color-scheme" content="dark">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="alternate icon" href="/logo-black.png">
+  <link rel="apple-touch-icon" href="/logo-black.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;600;700&display=swap"></noscript>
+  <link rel="stylesheet" href="/css/style.css?v=20260723c">
+  <% if (typeof jsonLd !== 'undefined') { %>
+  <script type="application/ld+json"><%- safeJsonLd(jsonLd) %></script>
+  <% } %>
+  <% if (typeof extraLd !== 'undefined') { %>
+  <% extraLd.forEach(function(ld){ %><script type="application/ld+json"><%- safeJsonLd(ld) %></script><% }) %>
+  <% } %>
+  <% if (site.gaId) { %>
+  <!-- Google Analytics 4 (only when GA_MEASUREMENT_ID is set) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=<%= site.gaId %>"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', '<%= site.gaId %>');
+  </script>
+  <% } %>
+</head>
+<body>

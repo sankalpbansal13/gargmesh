@@ -1,0 +1,5 @@
+<input type="hidden" name="_csrf" value="<%= csrfToken %>">
+<div class="hp-field" aria-hidden="true">
+  <label for="company_website_<%= typeof hpId !== 'undefined' ? hpId : 'x' %>">Company website</label>
+  <input type="text" name="company_website" id="company_website_<%= typeof hpId !== 'undefined' ? hpId : 'x' %>" tabindex="-1" autocomplete="off">
+</div>
