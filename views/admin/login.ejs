@@ -1,32 +1,22 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="robots" content="noindex,nofollow">
-  <title><%= title %></title>
-  <link rel="icon" href="/logo.png">
-  <link rel="stylesheet" href="/css/style.css">
-</head>
-<body class="admin-body">
-  <main class="admin-login-wrap">
-    <form class="admin-login-card" action="/admin/login" method="POST">
-      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-      <a href="/" class="admin-logo">
-        <img src="/logo.png" alt="Garg Industrial Mesh" width="56" height="56">
-      </a>
-      <h1>Admin Login</h1>
-      <p class="admin-sub">Garg Industrial Mesh — Admin Portal</p>
-      <% if (error) { %><p class="form-error"><%= error %></p><% } %>
-      <label>Username
-        <input type="text" name="username" required autofocus>
-      </label>
-      <label>Password
-        <input type="password" name="password" required>
-      </label>
-      <button type="submit" class="btn btn-orange btn-block">Login</button>
-      <a href="/" class="admin-back">← Back to site</a>
-    </form>
-  </main>
+<%- include('_head') %>
+<main class="admin-login-wrap">
+  <form class="admin-login-card" action="/admin/login" method="POST">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <a href="/" class="admin-logo">
+      <img src="/logo.png" alt="Garg Industrial Mesh" width="56" height="56">
+    </a>
+    <h1>Admin login</h1>
+    <p class="admin-sub">Garg Industrial Mesh</p>
+    <% if (error) { %><p class="form-error"><%= error %></p><% } %>
+    <label>Username
+      <input type="text" name="username" required autofocus autocomplete="username">
+    </label>
+    <label>Password
+      <input type="password" name="password" required autocomplete="current-password">
+    </label>
+    <button type="submit" class="btn btn-amber btn-block">Login</button>
+    <a href="/" class="admin-back">← Back to site</a>
+  </form>
+</main>
 </body>
 </html>

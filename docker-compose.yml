@@ -5,6 +5,9 @@ services:
     container_name: gargmesh-web
     env_file:
       - .env.prod
+    environment:
+      # TEMP: verbose debug logging — set to "0" or remove when done diagnosing
+      DEBUG: "1"
     ports:
       - "${PORT:-3000}:3000"
     volumes:

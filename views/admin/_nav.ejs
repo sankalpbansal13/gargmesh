@@ -1,0 +1,18 @@
+<% const ap = typeof adminPage !== 'undefined' ? adminPage : ''; %>
+<header class="admin-top">
+  <div class="admin-top-inner">
+    <a href="/admin/dashboard" class="admin-brand">
+      <img src="/logo.png" alt="" width="32" height="32">
+      <span>Admin · Garg Mesh</span>
+    </a>
+    <button type="button" class="admin-menu-btn" id="adminMenuBtn" aria-label="Open menu" aria-expanded="false" aria-controls="adminNav">☰</button>
+    <nav class="admin-nav" id="adminNav">
+      <a href="/admin/dashboard" class="<%= ap==='dashboard'?'active':'' %>">Dashboard</a>
+      <a href="/admin/products" class="<%= ap==='products'?'active':'' %>">Products</a>
+      <a href="/admin/products/new" class="<%= ap==='product-new'?'active':'' %>">Add product</a>
+      <a href="/admin/enquiries" class="<%= ap==='enquiries'?'active':'' %>">Enquiries</a>
+      <a href="/" target="_blank" rel="noopener">View site</a>
+      <a href="/admin/logout" class="admin-logout">Logout</a>
+    </nav>
+  </div>
+</header>

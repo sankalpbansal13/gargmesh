@@ -24,6 +24,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const NODE_ENV = process.env.NODE_ENV || 'development';
 const isProd = NODE_ENV === 'production';
+const isDebug = /^(1|true|yes|on)$/i.test(String(process.env.DEBUG || ''));
 
 const siteUrlRaw = (process.env.SITE_URL || 'http://localhost:3000').replace(/\/$/, '');
 if (isProd) {
@@ -38,6 +39,17 @@ if (isProd) {
   }
 }
 
+if (isDebug) {
+  console.log('[debug] DEBUG mode ON', {
+    NODE_ENV,
+    PORT,
+    SITE_URL: siteUrlRaw,
+    TRUST_PROXY: process.env.TRUST_PROXY || '',
+    hasSessionSecret: !!(process.env.SESSION_SECRET),
+    hasAdminPassword: !!(process.env.ADMIN_PASSWORD)
+  });
+}
+
 const sessionSecret = process.env.SESSION_SECRET
   || ('garg-mesh-dev-' + crypto.createHash('sha256').update(__dirname).digest('hex'));
 if (!process.env.SESSION_SECRET) {
@@ -49,6 +61,16 @@ app.set('views', path.join(__dirname, '..', 'views'));
 // Needed so secure cookies + rate-limit see the real client IP behind Nginx/Render/etc.
 if (isProd || process.env.TRUST_PROXY === '1') {
   app.set('trust proxy', 1);
+}
+
+if (isDebug) {
+  app.use((req, res, next) => {
+    const start = Date.now();
+    res.on('finish', () => {
+      console.log(`[debug] ${req.method} ${req.originalUrl} → ${res.statusCode} ${Date.now() - start}ms`);
+    });
+    next();
+  });
 }
 
 // Security headers (helmet) with a permissive CSP that keeps inline JSON-LD + Google Fonts working.

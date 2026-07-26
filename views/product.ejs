@@ -109,11 +109,11 @@ const faqLd = faqs.length ? {"@context":"https://schema.org","@type":"FAQPage","
       </div>
 
       <div class="pd-cta">
-        <a href="#enquire" class="btn btn-orange" data-ga="quote">Get Quote</a>
-        <a href="tel:<%= site.phone %>" class="btn btn-navy-outline" data-ga="call"><%- include('partials/_icon', {name:'phone', size:18}) %> Call <%= site.phone %></a>
+        <a href="#enquire" class="btn btn-amber" data-ga="quote">Get Quote</a>
+        <a href="tel:<%= site.phone %>" class="btn btn-ghost" data-ga="call"><%- include('partials/_icon', {name:'phone', size:18}) %> Call <%= site.phone %></a>
       </div>
       <div class="pd-cta-secondary">
-        <button type="button" class="btn btn-orange-outline btn-sm pd-add" data-ga="add_to_enquiry" data-add-enquiry data-id="<%= product.id %>" data-name="<%= product.name %>" data-slug="<%= product.slug %>">
+        <button type="button" class="btn btn-ghost btn-sm pd-add" data-ga="add_to_enquiry" data-add-enquiry data-id="<%= product.id %>" data-name="<%= product.name %>" data-slug="<%= product.slug %>">
           Add to Enquiry
         </button>
         <a href="<%= waLink(product.name) %>" class="link-wa" target="_blank" rel="noopener" data-ga="whatsapp"><%- include('partials/_icon', {name:'whatsapp', size:14}) %> WhatsApp</a>
@@ -180,12 +180,12 @@ const faqLd = faqs.length ? {"@context":"https://schema.org","@type":"FAQPage","
       <input type="hidden" name="product" value="<%= product.name %>">
       <%- include('partials/_enquiry_guard', { hpId: 'product' }) %>
       <span class="eyebrow">Get a quote</span>
-      <h3>Request Price &amp; Availability</h3>
-      <input type="text" name="name" placeholder="Your name" required>
-      <input type="tel" name="phone" placeholder="Phone number" required>
-      <input type="email" name="email" placeholder="Email (optional)">
-      <textarea name="message" placeholder="Grade, size, quantity..." rows="3" data-product="<%= product.name %>">I'm interested in <%= product.name %>. Please share price &amp; availability.</textarea>
-      <button type="submit" class="btn btn-orange btn-block"><%- include('partials/_icon', {name:'send', size:18}) %> Send Enquiry</button>
+      <h3>Request price &amp; availability</h3>
+      <label>Name<input type="text" name="name" required autocomplete="name"></label>
+      <label>Phone<input type="tel" name="phone" required inputmode="tel" autocomplete="tel"></label>
+      <label>Email (optional)<input type="email" name="email" autocomplete="email"></label>
+      <label>Details<textarea name="message" placeholder="Grade, size, quantity…" rows="3" data-product="<%= product.name %>">I'm interested in <%= product.name %>. Please share price &amp; availability.</textarea></label>
+      <button type="submit" class="btn btn-amber btn-block"><%- include('partials/_icon', {name:'send', size:18}) %> Send enquiry</button>
       <% if (typeof sent !== 'undefined' && sent) { %><p class="form-success">Thank you! We will contact you shortly.</p><% } %>
     </form>
   </div>

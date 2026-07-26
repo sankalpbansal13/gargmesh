@@ -1,71 +1,52 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="robots" content="noindex,nofollow">
-  <title><%= title %></title>
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-  <link rel="apple-touch-icon" href="/logo.png">
-  <link rel="stylesheet" href="/css/style.css">
-</head>
-<body class="admin-body">
-  <header class="admin-top">
-    <div class="container admin-top-inner">
-      <a href="/admin/dashboard" class="admin-brand">
-        <img src="/logo.png" alt="Garg Industrial Mesh" width="32" height="32">
-        <span>Admin · Garg Industrial Mesh</span>
-      </a>
-      <nav class="admin-nav">
-        <a href="/admin/dashboard">Dashboard</a>
-        <a href="/admin/products">Products</a>
-        <a href="/admin/products/new">Add Product</a>
-        <a href="/admin/enquiries">Enquiries</a>
-        <a href="/" target="_blank">View Site</a>
-        <a href="/admin/logout" class="admin-logout">Logout</a>
-      </nav>
-    </div>
-  </header>
-  <main class="admin-main container">
-    <h1>Enquiries</h1>
-    <% if (typeof flash !== 'undefined' && flash) { %><p class="form-success"><%= flash %></p><% } %>
-    <p style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-      <a href="/admin/enquiries.csv" class="btn btn-navy-outline btn-sm">⬇ Export CSV</a>
+<%- include('_head') %>
+<%- include('_nav', { adminPage: 'enquiries' }) %>
+<main class="admin-main">
+  <h1>Enquiries</h1>
+  <% if (typeof flash !== 'undefined' && flash) { %><p class="form-success"><%= flash %></p><% } %>
+  <div class="admin-toolbar">
+    <a href="/admin/enquiries.csv" class="btn btn-ghost btn-sm">Export CSV</a>
+  </div>
+  <% if (enquiries.length) { %>
+  <form id="bulkForm" action="/admin/enquiries/bulk" method="POST">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <p style="margin-bottom:0.85rem;display:flex;flex-wrap:wrap;gap:0.5rem;align-items:center">
+      <label class="checkbox-label" style="margin:0">
+        <input type="checkbox" id="selectAll" aria-label="Select all">
+        <span>Select all</span>
+      </label>
+      <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Delete selected enquiries?');">Delete selected</button>
     </p>
-    <% if (enquiries.length) { %>
-    <form id="bulkForm" action="/admin/enquiries/bulk" method="POST">
-      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-      <p style="margin-bottom:10px">
-        <button type="submit" class="btn btn-orange btn-sm" onclick="return confirm('Delete selected enquiries?');">Delete Selected</button>
-      </p>
-      <section class="admin-card">
-        <table class="admin-table">
-          <thead><tr><th style="width:28px"><input type="checkbox" id="selectAll"></th><th>Name</th><th>Phone</th><th>Email</th><th>Product</th><th>Message</th><th>When</th><th></th></tr></thead>
-          <tbody>
-            <% enquiries.forEach(function(e){ %>
-            <tr>
-              <td><input type="checkbox" name="ids" value="<%= e.id %>" class="row-check"></td>
-              <td><%= e.name %></td>
-              <td><a href="tel:<%= e.phone %>"><%= e.phone %></a><br><a href="https://wa.me/91<%= (e.phone||'').replace(/\D/g,'').replace(/^91/,'') %>" target="_blank" rel="noopener">WhatsApp</a></td>
-              <td><%= e.email||'—' %></td>
-              <td><%= e.product||'—' %></td>
-              <td class="msg-cell"><%= e.message||'—' %></td>
-              <td><%= e.created_at %></td>
-              <td>
-                <button type="submit" class="btn btn-orange btn-sm" formaction="/admin/enquiries/<%= e.id %>?_method=DELETE" formmethod="post" onclick="return confirm('Delete this enquiry?');">Delete</button>
-              </td>
-            </tr>
-            <% }); %>
-          </tbody>
-        </table>
-      </section>
-    </form>
-    <script>
-      document.getElementById('selectAll').addEventListener('change', function(){
-        document.querySelectorAll('.row-check').forEach(function(c){ c.checked = this.checked; }, this);
+
+    <div class="admin-list" style="display:grid">
+      <% enquiries.forEach(function(e){ %>
+      <div class="admin-row">
+        <label class="checkbox-label" style="margin:0">
+          <input type="checkbox" name="ids" value="<%= e.id %>" class="row-check">
+          <span class="admin-row-title"><%= e.name %></span>
+        </label>
+        <div class="admin-row-meta">
+          <a href="tel:<%= e.phone %>"><%= e.phone %></a>
+          · <a href="https://wa.me/91<%= (e.phone||'').replace(/\D/g,'').replace(/^91/,'') %>" target="_blank" rel="noopener">WhatsApp</a>
+          <% if (e.email) { %><br><%= e.email %><% } %>
+          <% if (e.product) { %><br><%= e.product %><% } %>
+          <br><%= e.created_at %>
+        </div>
+        <% if (e.message) { %><p class="msg-cell" style="margin:0;color:var(--muted);font-size:0.9rem"><%= e.message %></p><% } %>
+        <div class="admin-row-actions">
+          <button type="submit" class="btn btn-danger btn-sm" formaction="/admin/enquiries/<%= e.id %>?_method=DELETE" formmethod="post" onclick="return confirm('Delete this enquiry?');">Delete</button>
+        </div>
+      </div>
+      <% }); %>
+    </div>
+  </form>
+  <script>
+    var selectAll = document.getElementById('selectAll');
+    if (selectAll) {
+      selectAll.addEventListener('change', function () {
+        document.querySelectorAll('.row-check').forEach(function (c) { c.checked = selectAll.checked; });
       });
-    </script>
-    <% } else { %><p class="empty-state">No enquiries yet.</p><% } %>
-  </main>
-</body>
-</html>
+    }
+  </script>
+  <% } else { %><p class="empty-state">No enquiries yet.</p><% } %>
+</main>
+<%- include('_foot') %>

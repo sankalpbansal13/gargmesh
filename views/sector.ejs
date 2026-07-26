@@ -94,20 +94,20 @@
       <h2>Need mesh in <%= sector.locality || sector.sector %>?</h2>
       <p>Get a free quote with price &amp; availability within minutes.</p>
       <div class="final-contact">
-        <a href="tel:<%= site.phone %>" class="btn btn-orange" data-ga="call"><%- include('partials/_icon', {name:'phone', size:18}) %> Call <%= site.phone %></a>
-        <a href="https://wa.me/<%= site.whatsapp %>?text=<%= encodeURIComponent('Hi Garg Industrial Mesh, I need wire mesh in '+(sector.locality||sector.sector)+', '+sector.city+'. Please share price & availability.') %>" class="link-wa link-wa-light" target="_blank" rel="noopener" data-ga="whatsapp"><%- include('partials/_icon', {name:'whatsapp', size:16}) %> WhatsApp</a>
+        <a href="tel:<%= site.phone %>" class="btn btn-amber" data-ga="call"><%- include('partials/_icon', {name:'phone', size:18}) %> Call <%= site.phone %></a>
+        <a href="https://wa.me/<%= site.whatsapp %>?text=<%= encodeURIComponent('Hi Garg Industrial Mesh, I need wire mesh in '+(sector.locality||sector.sector)+', '+sector.city+'. Please share price & availability.') %>" class="btn btn-ghost" target="_blank" rel="noopener" data-ga="whatsapp"><%- include('partials/_icon', {name:'whatsapp', size:16}) %> WhatsApp</a>
       </div>
     </div>
     <form class="quote-form reveal" action="/enquiry" method="POST">
       <input type="hidden" name="redirect" value="/sectors/<%= sector.slug %>?sent=1">
       <input type="hidden" name="product" value="Enquiry from <%= sector.locality || sector.sector %>, <%= sector.city %> page">
       <%- include('partials/_enquiry_guard', { hpId: 'sector' }) %>
-      <span class="eyebrow">Request Quote</span>
-      <h3>Send Your Requirement</h3>
-      <input type="text" name="name" placeholder="Your name" required>
-      <input type="tel" name="phone" placeholder="Phone number" required>
-      <textarea name="message" placeholder="Product, grade, size, quantity..." rows="3"></textarea>
-      <button type="submit" class="btn btn-orange btn-block" data-ga="enquiry_submit">Send Enquiry</button>
+      <span class="eyebrow">Request quote</span>
+      <h3>Send your requirement</h3>
+      <label>Name<input type="text" name="name" required autocomplete="name"></label>
+      <label>Phone<input type="tel" name="phone" required inputmode="tel" autocomplete="tel"></label>
+      <label>Details<textarea name="message" placeholder="Product, grade, size, quantity…" rows="3"></textarea></label>
+      <button type="submit" class="btn btn-amber btn-block" data-ga="enquiry_submit">Send enquiry</button>
       <% if (typeof sent !== 'undefined' && sent) { %><p class="form-success">Thank you! We will contact you shortly.</p><% } %>
     </form>
   </div>

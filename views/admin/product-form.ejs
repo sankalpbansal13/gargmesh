@@ -1,168 +1,143 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="robots" content="noindex,nofollow">
-  <title><%= title %></title>
-  <link rel="icon" href="/logo.png">
-  <link rel="stylesheet" href="/css/style.css">
-</head>
-<body class="admin-body">
-  <header class="admin-top">
-    <div class="container admin-top-inner">
-      <a href="/admin/dashboard" class="admin-brand">
-        <img src="/logo.png" alt="Garg Industrial Mesh" width="32" height="32">
-        <span>Admin · Garg Industrial Mesh</span>
-      </a>
-      <nav class="admin-nav">
-        <a href="/admin/dashboard">Dashboard</a>
-        <a href="/admin/products">Products</a>
-        <a href="/admin/products/new">Add Product</a>
-        <a href="/admin/enquiries">Enquiries</a>
-        <a href="/" target="_blank">View Site</a>
-        <a href="/admin/logout" class="admin-logout">Logout</a>
-      </nav>
+<%- include('_head') %>
+<%- include('_nav', { adminPage: isEdit ? 'products' : 'product-new' }) %>
+<main class="admin-main">
+  <h1><%= isEdit ? 'Edit product' : 'Add product' %></h1>
+  <form class="admin-form" action="<%= isEdit ? '/admin/products/'+product.id+'?_method=PUT' : '/admin/products' %>" method="POST" enctype="multipart/form-data">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <div class="form-grid">
+      <label>Name *
+        <input type="text" name="name" value="<%= product.name||'' %>" required>
+      </label>
+      <label>Category
+        <input type="text" name="category" value="<%= product.category||'' %>" placeholder="e.g. Welded Mesh">
+      </label>
+      <label>Slug (URL)
+        <input type="text" name="slug" value="<%= product.slug||'' %>" placeholder="auto-generated from name">
+      </label>
+      <label>Price from
+        <input type="text" name="price_from" value="<%= product.price_from||'' %>" placeholder="e.g. ₹85/sqft" required>
+      </label>
+      <label>Materials
+        <input type="text" name="materials" value="<%= product.materials||'' %>" placeholder="e.g. SS 201, SS 304">
+      </label>
+      <label>Sizes
+        <input type="text" name="sizes" value="<%= product.sizes||'' %>" placeholder="e.g. 3x8, 4x8 ft">
+      </label>
+      <label>Grades / variants
+        <input type="text" name="grades" value="<%= product.grades||'' %>" placeholder="e.g. SS 201, SS 304">
+      </label>
+      <label>Applications
+        <input type="text" name="applications" value="<%= product.applications||'' %>" placeholder="comma separated">
+      </label>
     </div>
-  </header>
-  <main class="admin-main container">
-    <h1><%= isEdit ? 'Edit Product' : 'Add New Product' %></h1>
-    <form class="admin-form" action="<%= isEdit ? '/admin/products/'+product.id+'?_method=PUT' : '/admin/products' %>" method="POST" enctype="multipart/form-data">
-      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-      <div class="form-grid">
-        <label>Name *
-          <input type="text" name="name" value="<%= product.name||'' %>" required>
-        </label>
-        <label>Category
-          <input type="text" name="category" value="<%= product.category||'' %>" placeholder="e.g. Welded Mesh">
-        </label>
-        <label>Slug (URL)
-          <input type="text" name="slug" value="<%= product.slug||'' %>" placeholder="auto-generated from name">
-        </label>
-        <label>Price From <span class="admin-hint-inline">(shown on product page &amp; cards)</span>
-          <input type="text" name="price_from" value="<%= product.price_from||'' %>" placeholder="e.g. ₹85/sqft" required>
-        </label>
-        <label>Materials
-          <input type="text" name="materials" value="<%= product.materials||'' %>" placeholder="e.g. SS 201, SS 304">
-        </label>
-        <label>Sizes
-          <input type="text" name="sizes" value="<%= product.sizes||'' %>" placeholder="e.g. 3x8, 4x8 ft">
-        </label>
-        <label>Grades / Variants
-          <input type="text" name="grades" value="<%= product.grades||'' %>" placeholder="e.g. SS 201, SS 304">
-        </label>
-        <label>Applications
-          <input type="text" name="applications" value="<%= product.applications||'' %>" placeholder="comma separated">
-        </label>
-      </div>
-      <label>Short Description
-        <input type="text" name="short_desc" value="<%= product.short_desc||'' %>" placeholder="One-line summary shown on cards">
+    <label>Short description
+      <input type="text" name="short_desc" value="<%= product.short_desc||'' %>" placeholder="One-line summary shown on cards">
+    </label>
+    <label>Description
+      <textarea name="description" rows="5" placeholder="Full product description"><%= product.description||'' %></textarea>
+    </label>
+    <fieldset class="seo-fieldset">
+      <legend>SEO meta</legend>
+      <label>Meta title
+        <input type="text" name="meta_title" value="<%= product.meta_title||'' %>">
       </label>
-      <label>Description
-        <textarea name="description" rows="5" placeholder="Full product description"><%= product.description||'' %></textarea>
+      <label>Meta description
+        <textarea name="meta_description" rows="2"><%= product.meta_description||'' %></textarea>
       </label>
-      <fieldset class="seo-fieldset">
-        <legend>SEO Meta</legend>
-        <label>Meta Title
-          <input type="text" name="meta_title" value="<%= product.meta_title||'' %>">
-        </label>
-        <label>Meta Description
-          <textarea name="meta_description" rows="2"><%= product.meta_description||'' %></textarea>
-        </label>
-        <label>Meta Keywords
-          <input type="text" name="meta_keywords" value="<%= product.meta_keywords||'' %>">
-        </label>
-      </fieldset>
-      <label class="checkbox-label">
-        <input type="checkbox" name="featured" value="1" <%= product.featured?'checked':'' %>> Featured product (shown first)
+      <label>Meta keywords
+        <input type="text" name="meta_keywords" value="<%= product.meta_keywords||'' %>">
       </label>
+    </fieldset>
+    <label class="checkbox-label">
+      <input type="checkbox" name="featured" value="1" <%= product.featured?'checked':'' %>> Featured product (shown first)
+    </label>
 
-      <label>Product Photos (upload — JPG/PNG/WebP, max 3MB each)
-        <input type="file" name="photos" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" multiple>
-      </label>
+    <label>Product photos (JPG/PNG/WebP, max 3MB each)
+      <input type="file" name="photos" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" multiple>
+    </label>
 
-      <% let existingFaqs = []; try { existingFaqs = product.faq ? JSON.parse(product.faq) : []; } catch(e){ existingFaqs = []; } if (!existingFaqs.length) existingFaqs = [{q:'',a:''}]; %>
-      <fieldset class="seo-fieldset faq-fieldset">
-        <legend>FAQ (shown on product page + FAQPage schema)</legend>
-        <p class="admin-hint">Add question/answer pairs. Empty questions are ignored on save. These power the on-page FAQ accordion and Google "People Also Ask" schema.</p>
-        <div id="faqRows">
-          <% existingFaqs.forEach(function(f, i){ %>
-          <div class="faq-row">
-            <input type="text" name="faq_q" value="<%= f.q||'' %>" placeholder="Question">
-            <textarea name="faq_a" rows="2" placeholder="Answer"><%= f.a||'' %></textarea>
-            <button type="button" class="btn btn-orange btn-sm faq-remove" aria-label="Remove FAQ">&times; Remove</button>
-          </div>
-          <% }); %>
-        </div>
-        <button type="button" class="btn btn-navy-outline btn-sm" id="faqAdd">+ Add FAQ</button>
-      </fieldset>
-
-      <div class="form-actions">
-        <button type="submit" class="btn btn-orange"><%= isEdit ? 'Update Product' : 'Create Product' %></button>
-        <a href="/admin/products" class="btn btn-navy-outline">Cancel</a>
-      </div>
-    </form>
-
-    <% if (isEdit && images.length) { %>
-    <div class="admin-images" style="margin-top:2rem">
-      <h3>Current Photos</h3>
-      <p class="admin-hint">Set a cover photo (shown first on the product page) and add SEO alt text for each image. These actions are separate from the product form above.</p>
-      <div class="admin-img-grid">
-        <% images.forEach(function(img){ %>
-        <div class="admin-img">
-          <img src="/uploads/<%= img.filename %>" alt="<%= img.alt_text || 'product photo' %>" loading="lazy">
-          <% if (img.is_cover) { %><span class="cover-badge">★ Cover</span><% } %>
-          <form action="/admin/images/<%= img.id %>" method="POST" class="img-meta-form">
-            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-            <input type="text" name="caption" value="<%= img.caption||'' %>" placeholder="Caption">
-            <input type="text" name="alt_text" value="<%= img.alt_text||'' %>" placeholder="SEO alt text">
-            <button type="submit" class="btn btn-navy-outline btn-sm">Save</button>
-          </form>
-          <div class="img-row-actions">
-            <% if (!img.is_cover) { %>
-            <form action="/admin/images/<%= img.id %>/cover" method="POST">
-              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-              <button type="submit" class="btn btn-navy-outline btn-sm">Set Cover</button>
-            </form>
-            <% } %>
-            <form action="/admin/images/<%= img.id %>/move" method="POST" style="display:inline-flex;gap:4px">
-              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-              <button type="submit" name="dir" value="up" class="btn btn-navy-outline btn-sm" title="Move up">↑</button>
-              <button type="submit" name="dir" value="down" class="btn btn-navy-outline btn-sm" title="Move down">↓</button>
-            </form>
-            <form action="/admin/images/<%= img.id %>?_method=DELETE" method="POST" onsubmit="return confirm('Delete this photo?');">
-              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-              <button type="submit" class="btn btn-orange btn-sm">Delete</button>
-            </form>
-          </div>
+    <% let existingFaqs = []; try { existingFaqs = product.faq ? JSON.parse(product.faq) : []; } catch(e){ existingFaqs = []; } if (!existingFaqs.length) existingFaqs = [{q:'',a:''}]; %>
+    <fieldset class="seo-fieldset faq-fieldset">
+      <legend>FAQ</legend>
+      <p class="admin-hint">Empty questions are ignored. Powers the product FAQ accordion and FAQPage schema.</p>
+      <div id="faqRows">
+        <% existingFaqs.forEach(function(f, i){ %>
+        <div class="faq-row">
+          <input type="text" name="faq_q" value="<%= f.q||'' %>" placeholder="Question">
+          <textarea name="faq_a" rows="2" placeholder="Answer"><%= f.a||'' %></textarea>
+          <button type="button" class="btn btn-danger btn-sm faq-remove" aria-label="Remove FAQ">Remove</button>
         </div>
         <% }); %>
       </div>
-    </div>
-    <% } %>
+      <button type="button" class="btn btn-ghost btn-sm" id="faqAdd">+ Add FAQ</button>
+    </fieldset>
 
-    <script>
-      (function(){
-        var wrap = document.getElementById('faqRows');
-        var addBtn = document.getElementById('faqAdd');
-        function bindRemove(){
-          wrap.querySelectorAll('.faq-remove').forEach(function(b){
-            if(b.dataset.bound) return; b.dataset.bound='1';
-            b.addEventListener('click', function(){
-              if(wrap.querySelectorAll('.faq-row').length > 1){ b.closest('.faq-row').remove(); }
-            });
+    <div class="form-actions">
+      <button type="submit" class="btn btn-amber"><%= isEdit ? 'Update product' : 'Create product' %></button>
+      <a href="/admin/products" class="btn btn-ghost">Cancel</a>
+    </div>
+  </form>
+
+  <% if (isEdit && images.length) { %>
+  <div class="admin-images">
+    <h2 style="font-size:1.15rem;margin-bottom:0.5rem">Current photos</h2>
+    <p class="admin-hint">Cover photo shows first on the product page. These actions are separate from the form above.</p>
+    <div class="admin-img-grid">
+      <% images.forEach(function(img){ %>
+      <div class="admin-img">
+        <img src="/uploads/<%= img.filename %>" alt="<%= img.alt_text || 'product photo' %>" loading="lazy">
+        <% if (img.is_cover) { %><span class="cover-badge">★ Cover</span><% } %>
+        <form action="/admin/images/<%= img.id %>" method="POST" class="img-meta-form">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <input type="text" name="caption" value="<%= img.caption||'' %>" placeholder="Caption">
+          <input type="text" name="alt_text" value="<%= img.alt_text||'' %>" placeholder="SEO alt text">
+          <button type="submit" class="btn btn-ghost btn-sm">Save</button>
+        </form>
+        <div class="img-row-actions">
+          <% if (!img.is_cover) { %>
+          <form action="/admin/images/<%= img.id %>/cover" method="POST">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <button type="submit" class="btn btn-ghost btn-sm">Set cover</button>
+          </form>
+          <% } %>
+          <form action="/admin/images/<%= img.id %>/move" method="POST" style="display:inline-flex;gap:4px">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <button type="submit" name="dir" value="up" class="btn btn-ghost btn-sm" title="Move up">↑</button>
+            <button type="submit" name="dir" value="down" class="btn btn-ghost btn-sm" title="Move down">↓</button>
+          </form>
+          <form action="/admin/images/<%= img.id %>?_method=DELETE" method="POST" onsubmit="return confirm('Delete this photo?');">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+          </form>
+        </div>
+      </div>
+      <% }); %>
+    </div>
+  </div>
+  <% } %>
+
+  <script>
+    (function(){
+      var wrap = document.getElementById('faqRows');
+      var addBtn = document.getElementById('faqAdd');
+      if (!wrap || !addBtn) return;
+      function bindRemove(){
+        wrap.querySelectorAll('.faq-remove').forEach(function(b){
+          if (b.dataset.bound) return; b.dataset.bound = '1';
+          b.addEventListener('click', function(){
+            if (wrap.querySelectorAll('.faq-row').length > 1) b.closest('.faq-row').remove();
           });
-        }
-        addBtn.addEventListener('click', function(){
-          var row = document.createElement('div');
-          row.className = 'faq-row';
-          row.innerHTML = '<input type="text" name="faq_q" placeholder="Question"><textarea name="faq_a" rows="2" placeholder="Answer"></textarea><button type="button" class="btn btn-orange btn-sm faq-remove" aria-label="Remove FAQ">&times; Remove</button>';
-          wrap.appendChild(row);
-          bindRemove();
         });
+      }
+      addBtn.addEventListener('click', function(){
+        var row = document.createElement('div');
+        row.className = 'faq-row';
+        row.innerHTML = '<input type="text" name="faq_q" placeholder="Question"><textarea name="faq_a" rows="2" placeholder="Answer"></textarea><button type="button" class="btn btn-danger btn-sm faq-remove" aria-label="Remove FAQ">Remove</button>';
+        wrap.appendChild(row);
         bindRemove();
-      })();
-    </script>
-  </main>
-</body>
-</html>
+      });
+      bindRemove();
+    })();
+  </script>
+</main>
+<%- include('_foot') %>

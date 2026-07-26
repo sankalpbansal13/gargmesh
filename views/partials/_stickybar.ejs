@@ -2,9 +2,9 @@
 <div class="sticky-bar" aria-label="Quick contact">
   <a href="tel:<%= site.phone %>" class="sticky-half sticky-call" data-ga="call">
     <%- include('_icon', {name:'phone', size:20, class:'sticky-ico'}) %>
-    <span>Call Now</span>
+    <span>Call</span>
   </a>
-  <a href="https://wa.me/<%= site.whatsapp %>?text=<%- encodeURIComponent(stickyWa) %>" class="sticky-half sticky-wa sticky-wa-quiet" target="_blank" rel="noopener" data-ga="whatsapp">
+  <a href="https://wa.me/<%= site.whatsapp %>?text=<%- encodeURIComponent(stickyWa) %>" class="sticky-half sticky-wa" target="_blank" rel="noopener" data-ga="whatsapp">
     <%- include('_icon', {name:'whatsapp', size:20, class:'sticky-ico'}) %>
     <span>WhatsApp</span>
   </a>

@@ -328,6 +328,12 @@ app.use((req, res) => {
 app.use((err, req, res, next) => {
   console.error('Unhandled error', err);
   if (res.headersSent) return next(err);
+  const debugOn = /^(1|true|yes|on)$/i.test(String(process.env.DEBUG || ''));
+  if (debugOn) {
+    return res.status(500).type('text/plain').send(
+      'DEBUG error\n\n' + (err && err.stack ? err.stack : String(err))
+    );
+  }
   if (req.path && req.path.startsWith('/admin')) {
     req.session && (req.session.flash = 'Something went wrong. Please try again.');
     return res.status(500).redirect('/admin/dashboard');
@@ -336,4 +342,9 @@ app.use((err, req, res, next) => {
 });
 
 const { PORT } = require('./server-public');
-app.listen(PORT, () => console.log('Garg Industrial Mesh server running on http://localhost:' + PORT));
+app.listen(PORT, () => {
+  console.log('Garg Industrial Mesh server running on http://localhost:' + PORT);
+  if (/^(1|true|yes|on)$/i.test(String(process.env.DEBUG || ''))) {
+    console.log('[debug] request logging and error stacks enabled');
+  }
+});
