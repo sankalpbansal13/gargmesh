@@ -1,6 +1,7 @@
 const db = require('./db');
 const { products, slugify, buildFaq } = require('./seed-data');
 const { ensureProductImages } = require('./seed-images');
+const { ensureBlogPosts } = require('./seed-blog');
 
 /**
  * Optional one-shot repair for SS Welded Mesh corruption.
@@ -80,6 +81,8 @@ function run() {
   }
   // Always attach cover/gallery images from public/uploads when files exist.
   ensureProductImages();
+  // Import JS blog modules into SQLite once (idempotent — never overwrites edits).
+  ensureBlogPosts();
 }
 
 if (require.main === module) run();

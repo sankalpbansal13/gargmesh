@@ -8,15 +8,30 @@
       <strong><%= productCount %></strong>
       <span>Products</span>
     </a>
+    <a href="/admin/posts" class="admin-stat">
+      <strong><%= postCount %></strong>
+      <span>Blog posts</span>
+    </a>
     <a href="/admin/enquiries" class="admin-stat">
       <strong><%= enquiryCount %></strong>
       <span>Enquiries</span>
     </a>
-    <a href="/admin/products/new" class="admin-stat admin-stat-cta">
+    <a href="/admin/posts/new" class="admin-stat admin-stat-cta">
       <strong>+</strong>
-      <span>Add product</span>
+      <span>Add blog post</span>
     </a>
   </div>
+
+  <section class="admin-card">
+    <h2 style="margin-bottom:0.85rem;font-size:1.1rem">Quick actions</h2>
+    <div class="admin-toolbar" style="margin:0">
+      <a href="/admin/products/new" class="btn btn-amber btn-sm">Add product</a>
+      <a href="/admin/posts/new" class="btn btn-ghost btn-sm">Add blog post</a>
+      <a href="/admin/enquiries" class="btn btn-ghost btn-sm">View enquiries</a>
+      <a href="/admin/enquiries.csv" class="btn btn-ghost btn-sm">Export CSV</a>
+    </div>
+  </section>
+
   <section class="admin-card">
     <h2 style="margin-bottom:0.85rem;font-size:1.1rem">Recent enquiries</h2>
     <% if (recentEnquiries.length) { %>
@@ -34,6 +49,24 @@
     </div>
     <% } else { %><p class="empty-state">No enquiries yet.</p><% } %>
     <p style="margin-top:1rem"><a href="/admin/enquiries">View all enquiries →</a></p>
+  </section>
+
+  <section class="admin-card">
+    <h2 style="margin-bottom:0.85rem;font-size:1.1rem">Recent blog posts</h2>
+    <% if (recentPosts && recentPosts.length) { %>
+    <div class="admin-list" style="display:grid">
+      <% recentPosts.forEach(function(p){ %>
+      <div class="admin-row">
+        <div class="admin-row-title"><a href="/admin/posts/<%= p.id %>/edit"><%= p.title %></a></div>
+        <div class="admin-row-meta">
+          <% if (p.date) { %><%= p.date %> · <% } %>
+          <a href="/blog/<%= p.slug %>" target="_blank" rel="noopener">View live</a>
+        </div>
+      </div>
+      <% }); %>
+    </div>
+    <% } else { %><p class="empty-state">No blog posts yet. <a href="/admin/posts/new">Write one</a>.</p><% } %>
+    <p style="margin-top:1rem"><a href="/admin/posts">Manage all posts →</a></p>
   </section>
 </main>
 <%- include('_foot') %>

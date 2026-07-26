@@ -12,7 +12,7 @@ const { imageSize } = require('image-size');
 const db = require('./db');
 const { run: seedRun } = require('./seed');
 const { requireAuth } = require('./middleware/auth');
-const { posts: blogPosts, findBySlug: findBlogPost } = require('./blog-data');
+const { listPosts, findBySlug: findBlogPost } = require('./posts');
 const { findByName: findCity } = require('./city-data');
 const { sectors: sectorList, findBySlug: findSector, byCity: localitiesByCity, groupedByCity, relatedLocalities } = require('./sector-data');
 const { safeRedirectPath } = require('./safe-redirect');
@@ -472,9 +472,10 @@ app.get('/contact', (req, res) => {
 app.get('/blog', (req, res) => {
   const perPage = 9;
   const currentPage = Math.max(1, parseInt(req.query.page, 10) || 1);
-  const total = blogPosts.length;
+  const all = listPosts({ includeDeleted: false });
+  const total = all.length;
   const totalPages = Math.max(1, Math.ceil(total / perPage));
-  const pagePosts = blogPosts.slice((currentPage - 1) * perPage, currentPage * perPage);
+  const pagePosts = all.slice((currentPage - 1) * perPage, currentPage * perPage);
   res.render('blog', {
     title: 'Blog — Mesh Guides & Tips | Garg Industrial Mesh',
     posts: pagePosts,
@@ -488,7 +489,7 @@ app.get('/blog', (req, res) => {
 app.get('/blog/:slug', (req, res) => {
   const post = findBlogPost(req.params.slug);
   if (!post) return res.status(404).render('404', { title: 'Blog Post Not Found' });
-  const related = blogPosts.filter(p => p.slug !== post.slug).slice(0, 3);
+  const related = listPosts({ includeDeleted: false }).filter(p => p.slug !== post.slug).slice(0, 3);
   const { renderBody } = require('./blog-render');
   const bodyHtml = renderBody(post.body || []);
   const breadcrumb = {
@@ -558,8 +559,7 @@ app.get('/sitemap.xml', (req, res) => {
     xml += `  <url><loc>${base}${p}</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>\n`;
   });
   try {
-    const blogPostsList = require('./blog-data').posts;
-    blogPostsList.forEach(p => {
+    listPosts({ includeDeleted: false }).forEach(p => {
       xml += `  <url><loc>${base}/blog/${p.slug}</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>\n`;
     });
   } catch (e) {}

@@ -8,9 +8,11 @@
     <button type="button" class="admin-menu-btn" id="adminMenuBtn" aria-label="Open menu" aria-expanded="false" aria-controls="adminNav">☰</button>
     <nav class="admin-nav" id="adminNav">
       <a href="/admin/dashboard" class="<%= ap==='dashboard'?'active':'' %>">Dashboard</a>
-      <a href="/admin/products" class="<%= ap==='products'?'active':'' %>">Products</a>
-      <a href="/admin/products/new" class="<%= ap==='product-new'?'active':'' %>">Add product</a>
+      <a href="/admin/products" class="<%= ap==='products'||ap==='product-new'?'active':'' %>">Products</a>
+      <a href="/admin/posts" class="<%= ap==='posts'||ap==='post-new'?'active':'' %>">Blog</a>
       <a href="/admin/enquiries" class="<%= ap==='enquiries'?'active':'' %>">Enquiries</a>
+      <a href="/admin/products/new" class="<%= ap==='product-new'?'active':'' %>">Add product</a>
+      <a href="/admin/posts/new" class="<%= ap==='post-new'?'active':'' %>">Add post</a>
       <a href="/" target="_blank" rel="noopener">View site</a>
       <a href="/admin/logout" class="admin-logout">Logout</a>
     </nav>

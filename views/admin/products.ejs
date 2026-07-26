@@ -5,7 +5,11 @@
   <% if (typeof flash !== 'undefined' && flash) { %><p class="form-success"><%= flash %></p><% } %>
   <div class="admin-toolbar">
     <a href="/admin/products/new" class="btn btn-amber btn-sm">+ Add product</a>
+    <% if (showDeleted) { %>
+    <a href="/admin/products" class="btn btn-ghost btn-sm">View live products</a>
+    <% } else { %>
     <a href="/admin/products?deleted=1" class="btn btn-ghost btn-sm">View deleted</a>
+    <% } %>
   </div>
   <form class="admin-filters" method="GET" action="/admin/products">
     <input type="hidden" name="deleted" value="<%= showDeleted?'1':'' %>">
@@ -27,8 +31,11 @@
     <div class="admin-row">
       <div>
         <div class="admin-row-title">
+          <% if (p.deleted) { %>
+          <%= p.name %> <span class="cover-badge">Deleted</span>
+          <% } else { %>
           <a href="/products/<%= p.slug %>" target="_blank" rel="noopener"><%= p.name %></a>
-          <% if (p.deleted) { %> <span class="cover-badge">Deleted</span><% } %>
+          <% } %>
           <% if (p.featured) { %> ★<% } %>
         </div>
         <div class="admin-row-meta"><%= p.category || '—' %></div>

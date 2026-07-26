@@ -1,0 +1,99 @@
+<%
+  const tldrText = Array.isArray(post.tldr) ? post.tldr.join('\n') : (post.tldr || '');
+  const bodyText = Array.isArray(post.body) ? post.body.join('\n') : (post.body || '');
+  let existingFaqs = Array.isArray(post.faq) ? post.faq : [];
+  if (!existingFaqs.length) existingFaqs = [{ q: '', a: '' }];
+%>
+<%- include('_head') %>
+<%- include('_nav', { adminPage: isEdit ? 'posts' : 'post-new' }) %>
+<main class="admin-main">
+  <h1><%= isEdit ? 'Edit blog post' : 'Add blog post' %></h1>
+  <% if (typeof flash !== 'undefined' && flash) { %><p class="form-success"><%= flash %></p><% } %>
+  <form class="admin-form" action="<%= isEdit ? '/admin/posts/'+post.id+'?_method=PUT' : '/admin/posts' %>" method="POST">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <div class="form-grid">
+      <label>Title *
+        <input type="text" name="title" value="<%= post.title||'' %>" required>
+      </label>
+      <label>Slug (URL)
+        <input type="text" name="slug" value="<%= post.slug||'' %>" placeholder="auto-generated from title">
+      </label>
+      <label>Display date
+        <input type="text" name="date" value="<%= post.date||'' %>" placeholder="e.g. Jul 2026">
+      </label>
+      <label>Author
+        <input type="text" name="author" value="<%= post.author||'Garg Industrial Mesh Team' %>">
+      </label>
+    </div>
+    <label>Excerpt
+      <textarea name="excerpt" rows="2" placeholder="Short summary shown on the blog index"><%= post.excerpt||'' %></textarea>
+    </label>
+
+    <fieldset class="seo-fieldset">
+      <legend>SEO meta</legend>
+      <label>Meta description
+        <textarea name="meta_description" rows="2"><%= post.meta_description||'' %></textarea>
+      </label>
+      <label>Meta keywords
+        <input type="text" name="meta_keywords" value="<%= post.meta_keywords||'' %>">
+      </label>
+    </fieldset>
+
+    <label>Key takeaways (TL;DR) — one per line
+      <textarea name="tldr" rows="4" placeholder="Takeaway one&#10;Takeaway two"><%= tldrText %></textarea>
+    </label>
+
+    <label>Body — one paragraph / line per row
+      <p class="admin-hint">Supports <code>## Heading</code>, <code>### Subheading</code>, <code>- list</code>, <code>&gt; quote</code>, tables with <code>|</code>, and <code>**bold**</code>.</p>
+      <textarea name="body" rows="18" required placeholder="Intro paragraph…&#10;## Section heading&#10;More content…"><%= bodyText %></textarea>
+    </label>
+
+    <fieldset class="seo-fieldset faq-fieldset">
+      <legend>FAQ</legend>
+      <p class="admin-hint">Empty questions are ignored. Powers the on-page FAQ and FAQPage schema.</p>
+      <div id="faqRows">
+        <% existingFaqs.forEach(function(f){ %>
+        <div class="faq-row">
+          <input type="text" name="faq_q" value="<%= f.q||'' %>" placeholder="Question">
+          <textarea name="faq_a" rows="2" placeholder="Answer"><%= f.a||'' %></textarea>
+          <button type="button" class="btn btn-danger btn-sm faq-remove" aria-label="Remove FAQ">Remove</button>
+        </div>
+        <% }); %>
+      </div>
+      <button type="button" class="btn btn-ghost btn-sm" id="faqAdd">+ Add FAQ</button>
+    </fieldset>
+
+    <div class="form-actions">
+      <button type="submit" class="btn btn-amber"><%= isEdit ? 'Update post' : 'Create post' %></button>
+      <a href="/admin/posts" class="btn btn-ghost">Cancel</a>
+      <% if (isEdit && post.slug && !post.deleted) { %>
+      <a href="/blog/<%= post.slug %>" class="btn btn-ghost" target="_blank" rel="noopener">View live</a>
+      <% } %>
+    </div>
+  </form>
+
+  <script>
+    (function(){
+      var wrap = document.getElementById('faqRows');
+      var addBtn = document.getElementById('faqAdd');
+      if (!wrap || !addBtn) return;
+      function bindRemove(){
+        wrap.querySelectorAll('.faq-remove').forEach(function(b){
+          if (b.dataset.bound) return; b.dataset.bound = '1';
+          b.addEventListener('click', function(){
+            if (wrap.querySelectorAll('.faq-row').length > 1) b.closest('.faq-row').remove();
+          });
+        });
+      }
+      addBtn.addEventListener('click', function(){
+        var row = document.createElement('div');
+        row.className = 'faq-row';
+        row.innerHTML = '<input type="text" name="faq_q" placeholder="Question"><textarea name="faq_a" rows="2" placeholder="Answer"></textarea><button type="button" class="btn btn-danger btn-sm faq-remove" aria-label="Remove FAQ">Remove</button>';
+        wrap.appendChild(row);
+        bindRemove();
+      });
+      bindRemove();
+    })();
+  </script>
+</main>
+<%- include('_foot') %>

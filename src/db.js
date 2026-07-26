@@ -55,6 +55,22 @@ CREATE TABLE IF NOT EXISTS admin (
   username TEXT UNIQUE,
   password TEXT
 );
+
+CREATE TABLE IF NOT EXISTS posts (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  slug TEXT UNIQUE,
+  title TEXT NOT NULL,
+  date TEXT,
+  author TEXT,
+  excerpt TEXT,
+  meta_description TEXT,
+  meta_keywords TEXT,
+  tldr TEXT,
+  body TEXT,
+  faq TEXT,
+  deleted INTEGER DEFAULT 0,
+  created_at TEXT DEFAULT (datetime('now'))
+);
 `);
 
 // Add columns added in this extension if missing (idempotent)

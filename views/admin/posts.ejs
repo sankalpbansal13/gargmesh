@@ -1,0 +1,63 @@
+<%- include('_head') %>
+<%- include('_nav', { adminPage: 'posts' }) %>
+<main class="admin-main">
+  <h1>Blog posts</h1>
+  <% if (typeof flash !== 'undefined' && flash) { %><p class="form-success"><%= flash %></p><% } %>
+  <div class="admin-toolbar">
+    <a href="/admin/posts/new" class="btn btn-amber btn-sm">+ Add post</a>
+    <% if (showDeleted) { %>
+    <a href="/admin/posts" class="btn btn-ghost btn-sm">View live posts</a>
+    <% } else { %>
+    <a href="/admin/posts?deleted=1" class="btn btn-ghost btn-sm">View deleted</a>
+    <a href="/blog" class="btn btn-ghost btn-sm" target="_blank" rel="noopener">View blog</a>
+    <% } %>
+  </div>
+  <form class="admin-filters" method="GET" action="/admin/posts">
+    <input type="hidden" name="deleted" value="<%= showDeleted?'1':'' %>">
+    <label>Search
+      <input type="search" name="q" value="<%= q||'' %>" placeholder="Title or slug…">
+    </label>
+    <button type="submit" class="btn btn-ghost btn-sm">Filter</button>
+    <a href="/admin/posts" class="btn btn-ghost btn-sm">Clear</a>
+  </form>
+
+  <div class="admin-list" style="display:grid">
+    <% posts.forEach(function(p){ %>
+    <div class="admin-row">
+      <div>
+        <div class="admin-row-title">
+          <% if (p.deleted) { %>
+          <%= p.title %> <span class="cover-badge">Deleted</span>
+          <% } else { %>
+          <a href="/blog/<%= p.slug %>" target="_blank" rel="noopener"><%= p.title %></a>
+          <% } %>
+        </div>
+        <div class="admin-row-meta">
+          /blog/<%= p.slug %>
+          <% if (p.date) { %> · <%= p.date %><% } %>
+        </div>
+      </div>
+      <div class="admin-row-actions">
+        <a href="/admin/posts/<%= p.id %>/edit" class="btn btn-ghost btn-sm">Edit</a>
+        <% if (!p.deleted) { %>
+        <form action="/admin/posts/<%= p.id %>?_method=DELETE" method="POST" onsubmit="return confirm('Move this post to deleted?');">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+        </form>
+        <% } else { %>
+        <form action="/admin/posts/<%= p.id %>/restore" method="POST">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <button type="submit" class="btn btn-ghost btn-sm">Restore</button>
+        </form>
+        <form action="/admin/posts/<%= p.id %>/permdelete" method="POST" onsubmit="return confirm('PERMANENTLY delete this post?');">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <button type="submit" class="btn btn-danger btn-sm">Permanent</button>
+        </form>
+        <% } %>
+      </div>
+    </div>
+    <% }); %>
+    <% if (!posts.length) { %><p class="empty-state">No posts found.</p><% } %>
+  </div>
+</main>
+<%- include('_foot') %>

@@ -51,6 +51,30 @@ function uniqueSlug(base, excludeId) {
   }
 }
 
+function uniquePostSlug(base, excludeId) {
+  let slug = base || 'post';
+  let n = 1;
+  while (true) {
+    const row = excludeId
+      ? db.prepare('SELECT id FROM posts WHERE slug = ? AND id != ?').get(slug, excludeId)
+      : db.prepare('SELECT id FROM posts WHERE slug = ?').get(slug);
+    if (!row) return slug;
+    slug = base + '-' + (n++);
+  }
+}
+
+function linesFromTextarea(raw) {
+  return String(raw || '').replace(/\r\n/g, '\n').split('\n').map((l) => l.trimEnd());
+}
+
+function tldrFromTextarea(raw) {
+  return String(raw || '')
+    .replace(/\r\n/g, '\n')
+    .split('\n')
+    .map((l) => l.trim())
+    .filter(Boolean);
+}
+
 // ---------- ADMIN ROUTES ----------
 
 app.get('/admin/login', (req, res) => {
@@ -82,8 +106,14 @@ app.get('/admin/logout', (req, res) => {
 app.get('/admin/dashboard', requireAuth, (req, res) => {
   const productCount = db.prepare('SELECT COUNT(*) as c FROM products WHERE deleted = 0').get().c;
   const enquiryCount = db.prepare('SELECT COUNT(*) as c FROM enquiries').get().c;
+  const postCount = db.prepare('SELECT COUNT(*) as c FROM posts WHERE deleted = 0').get().c;
   const recentEnquiries = db.prepare('SELECT * FROM enquiries ORDER BY id DESC LIMIT 5').all();
-  res.render('admin/dashboard', { title: 'Dashboard | Admin', productCount, enquiryCount, recentEnquiries, layout: false });
+  const recentPosts = db.prepare('SELECT id, title, slug, date FROM posts WHERE deleted = 0 ORDER BY id DESC LIMIT 5').all();
+  res.render('admin/dashboard', {
+    title: 'Dashboard | Admin',
+    productCount, enquiryCount, postCount, recentEnquiries, recentPosts,
+    layout: false
+  });
 });
 
 app.get('/admin/products', requireAuth, (req, res) => {
@@ -111,10 +141,17 @@ app.post('/admin/products', requireAuth, upload.array('photos', 10), checkCsrfCl
     const b = req.body;
     const slug = uniqueSlug(b.slug ? slugify(b.slug) : slugify(b.name));
     const faqJson = buildFaqJson(b);
+    const rating = b.rating_value !== '' && b.rating_value != null ? Number(b.rating_value) : null;
+    const reviews = b.review_count !== '' && b.review_count != null ? parseInt(b.review_count, 10) : null;
     const info = db.prepare(`
-      INSERT INTO products (slug, name, category, short_desc, description, materials, sizes, grades, applications, price_from, faq, meta_title, meta_description, meta_keywords, featured)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-    `).run(slug, b.name, b.category, b.short_desc, b.description, b.materials, b.sizes, b.grades, b.applications, b.price_from, faqJson, b.meta_title, b.meta_description, b.meta_keywords, b.featured ? 1 : 0);
+      INSERT INTO products (slug, name, category, short_desc, description, materials, sizes, grades, applications, price_from, faq, meta_title, meta_description, meta_keywords, featured, rating_value, review_count)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+    `).run(
+      slug, b.name, b.category, b.short_desc, b.description, b.materials, b.sizes, b.grades, b.applications, b.price_from,
+      faqJson, b.meta_title, b.meta_description, b.meta_keywords, b.featured ? 1 : 0,
+      (rating != null && !Number.isNaN(rating) ? rating : null),
+      (reviews != null && !Number.isNaN(reviews) ? reviews : null)
+    );
     if (req.files && req.files.length) {
       const hasCover = db.prepare('SELECT COUNT(*) as c FROM product_images WHERE product_id = ? AND is_cover = 1').get(info.lastInsertRowid).c;
       const insImg = db.prepare('INSERT INTO product_images (product_id, filename, caption, alt_text, sort_order, is_cover, width, height) VALUES (?,?,?,?,?,?,?,?)');
@@ -134,17 +171,36 @@ app.post('/admin/products', requireAuth, upload.array('photos', 10), checkCsrfCl
   }
 });
 
-// Duplicate a product (clone data into a new draft)
+// Duplicate a product (clone data + copy image files into a new draft)
 app.post('/admin/products/:id/duplicate', requireAuth, checkCsrf, (req, res) => {
   try {
     const p = db.prepare('SELECT * FROM products WHERE id = ?').get(req.params.id);
     if (!p) return res.redirect('/admin/products');
     const slug = uniqueSlug(slugify(p.name) + '-copy');
-    db.prepare(`
-      INSERT INTO products (slug, name, category, short_desc, description, materials, sizes, grades, applications, price_from, faq, meta_title, meta_description, meta_keywords, featured)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-    `).run(slug, p.name + ' (Copy)', p.category, p.short_desc, p.description, p.materials, p.sizes, p.grades, p.applications, p.price_from, p.faq, p.meta_title, p.meta_description, p.meta_keywords, 0);
-    req.session.flash = '✅ Product duplicated as draft.';
+    const info = db.prepare(`
+      INSERT INTO products (slug, name, category, short_desc, description, materials, sizes, grades, applications, price_from, faq, meta_title, meta_description, meta_keywords, featured, rating_value, review_count)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+    `).run(
+      slug, p.name + ' (Copy)', p.category, p.short_desc, p.description, p.materials, p.sizes, p.grades, p.applications,
+      p.price_from, p.faq, p.meta_title, p.meta_description, p.meta_keywords, 0, p.rating_value || null, p.review_count || null
+    );
+    const newId = info.lastInsertRowid;
+    const imgs = db.prepare('SELECT * FROM product_images WHERE product_id = ? ORDER BY sort_order ASC, id ASC').all(p.id);
+    const insImg = db.prepare('INSERT INTO product_images (product_id, filename, caption, alt_text, sort_order, is_cover, width, height) VALUES (?,?,?,?,?,?,?,?)');
+    const uploadsDir = path.join(__dirname, '..', 'public', 'uploads');
+    imgs.forEach((im) => {
+      const src = safeUploadPath(im.filename);
+      if (!src || !fs.existsSync(src)) return;
+      const ext = path.extname(im.filename) || '.jpg';
+      const copyName = crypto.randomBytes(12).toString('hex') + ext;
+      try {
+        fs.copyFileSync(src, path.join(uploadsDir, copyName));
+        insImg.run(newId, copyName, im.caption || '', im.alt_text || '', im.sort_order || 0, im.is_cover ? 1 : 0, im.width || null, im.height || null);
+      } catch (e) {
+        console.warn('Duplicate image copy failed', im.filename, e.message);
+      }
+    });
+    req.session.flash = 'Product duplicated (including photos).';
   } catch (err) {
     console.error('Duplicate product failed', err);
     req.session.flash = 'Could not duplicate product.';
@@ -165,9 +221,17 @@ app.put('/admin/products/:id', requireAuth, upload.array('photos', 10), checkCsr
     const id = req.params.id;
     const slug = uniqueSlug(b.slug ? slugify(b.slug) : slugify(b.name), id);
     const faqJson = buildFaqJson(b);
+    const rating = b.rating_value !== '' && b.rating_value != null ? Number(b.rating_value) : null;
+    const reviews = b.review_count !== '' && b.review_count != null ? parseInt(b.review_count, 10) : null;
     db.prepare(`
-      UPDATE products SET slug=?, name=?, category=?, short_desc=?, description=?, materials=?, sizes=?, grades=?, applications=?, price_from=?, faq=?, meta_title=?, meta_description=?, meta_keywords=?, featured=? WHERE id=?
-    `).run(slug, b.name, b.category, b.short_desc, b.description, b.materials, b.sizes, b.grades, b.applications, b.price_from, faqJson, b.meta_title, b.meta_description, b.meta_keywords, b.featured ? 1 : 0, id);
+      UPDATE products SET slug=?, name=?, category=?, short_desc=?, description=?, materials=?, sizes=?, grades=?, applications=?, price_from=?, faq=?, meta_title=?, meta_description=?, meta_keywords=?, featured=?, rating_value=?, review_count=? WHERE id=?
+    `).run(
+      slug, b.name, b.category, b.short_desc, b.description, b.materials, b.sizes, b.grades, b.applications, b.price_from,
+      faqJson, b.meta_title, b.meta_description, b.meta_keywords, b.featured ? 1 : 0,
+      (rating != null && !Number.isNaN(rating) ? rating : null),
+      (reviews != null && !Number.isNaN(reviews) ? reviews : null),
+      id
+    );
     if (req.files && req.files.length) {
       const hasCover = db.prepare('SELECT COUNT(*) as c FROM product_images WHERE product_id = ? AND is_cover = 1').get(id).c;
       const maxSort = db.prepare('SELECT COALESCE(MAX(sort_order),-1) as m FROM product_images WHERE product_id = ?').get(id).m;
@@ -281,6 +345,130 @@ app.delete('/admin/images/:id', requireAuth, checkCsrf, (req, res) => {
     db.prepare('DELETE FROM product_images WHERE id = ?').run(img.id);
   }
   res.redirect('/admin/products/' + (img ? img.product_id : '') + '/edit');
+});
+
+// ---------- BLOG / POSTS ----------
+
+app.get('/admin/posts', requireAuth, (req, res) => {
+  const q = (req.query.q || '').trim();
+  const showDeleted = req.query.deleted === '1';
+  const { listPosts } = require('./posts');
+  const posts = listPosts({ includeDeleted: showDeleted, q });
+  res.render('admin/posts', { title: 'Manage Blog | Admin', posts, q, showDeleted, layout: false });
+});
+
+app.get('/admin/posts/new', requireAuth, (req, res) => {
+  res.render('admin/post-form', {
+    title: 'Add Blog Post | Admin',
+    post: {
+      author: 'Garg Industrial Mesh Team',
+      date: new Date().toLocaleString('en-US', { month: 'short', year: 'numeric' }),
+      tldr: [],
+      body: [],
+      faq: []
+    },
+    isEdit: false,
+    layout: false
+  });
+});
+
+app.post('/admin/posts', requireAuth, checkCsrf, (req, res) => {
+  try {
+    const b = req.body;
+    if (!(b.title || '').trim()) {
+      req.session.flash = 'Title is required.';
+      return res.redirect('/admin/posts/new');
+    }
+    const slug = uniquePostSlug(b.slug ? slugify(b.slug) : slugify(b.title));
+    const faqJson = buildFaqJson(b);
+    const tldrJson = JSON.stringify(tldrFromTextarea(b.tldr));
+    const bodyJson = JSON.stringify(linesFromTextarea(b.body));
+    db.prepare(`
+      INSERT INTO posts (slug, title, date, author, excerpt, meta_description, meta_keywords, tldr, body, faq, deleted)
+      VALUES (?,?,?,?,?,?,?,?,?,?,0)
+    `).run(
+      slug, b.title.trim(), (b.date || '').trim(), (b.author || 'Garg Industrial Mesh Team').trim(),
+      (b.excerpt || '').trim(), (b.meta_description || '').trim(), (b.meta_keywords || '').trim(),
+      tldrJson, bodyJson, faqJson
+    );
+    req.session.flash = 'Blog post created.';
+    res.redirect('/admin/posts');
+  } catch (err) {
+    console.error('Create post failed', err);
+    req.session.flash = 'Could not create post. Please try again.';
+    res.redirect('/admin/posts/new');
+  }
+});
+
+app.get('/admin/posts/:id/edit', requireAuth, (req, res) => {
+  const { findById } = require('./posts');
+  const post = findById(req.params.id);
+  if (!post) return res.redirect('/admin/posts');
+  res.render('admin/post-form', { title: 'Edit Blog Post | Admin', post, isEdit: true, layout: false });
+});
+
+app.put('/admin/posts/:id', requireAuth, checkCsrf, (req, res) => {
+  try {
+    const b = req.body;
+    const id = req.params.id;
+    const existing = db.prepare('SELECT id FROM posts WHERE id = ?').get(id);
+    if (!existing) {
+      req.session.flash = 'Post not found.';
+      return res.redirect('/admin/posts');
+    }
+    if (!(b.title || '').trim()) {
+      req.session.flash = 'Title is required.';
+      return res.redirect('/admin/posts/' + id + '/edit');
+    }
+    const slug = uniquePostSlug(b.slug ? slugify(b.slug) : slugify(b.title), id);
+    const faqJson = buildFaqJson(b);
+    const tldrJson = JSON.stringify(tldrFromTextarea(b.tldr));
+    const bodyJson = JSON.stringify(linesFromTextarea(b.body));
+    db.prepare(`
+      UPDATE posts SET slug=?, title=?, date=?, author=?, excerpt=?, meta_description=?, meta_keywords=?, tldr=?, body=?, faq=?
+      WHERE id=?
+    `).run(
+      slug, b.title.trim(), (b.date || '').trim(), (b.author || 'Garg Industrial Mesh Team').trim(),
+      (b.excerpt || '').trim(), (b.meta_description || '').trim(), (b.meta_keywords || '').trim(),
+      tldrJson, bodyJson, faqJson, id
+    );
+    req.session.flash = 'Blog post updated.';
+    res.redirect('/admin/posts');
+  } catch (err) {
+    console.error('Update post failed', err);
+    req.session.flash = 'Could not update post. Please try again.';
+    res.redirect('/admin/posts/' + req.params.id + '/edit');
+  }
+});
+
+app.delete('/admin/posts/:id', requireAuth, checkCsrf, (req, res) => {
+  const p = db.prepare('SELECT id, slug FROM posts WHERE id = ?').get(req.params.id);
+  if (p) {
+    const base = String(p.slug || 'post').replace(/-deleted-\d+$/, '');
+    const tombstone = uniquePostSlug(base + '-deleted-' + p.id);
+    db.prepare('UPDATE posts SET deleted = 1, slug = ? WHERE id = ?').run(tombstone, p.id);
+  }
+  req.session.flash = 'Post moved to deleted (restore anytime).';
+  res.redirect('/admin/posts');
+});
+
+app.post('/admin/posts/:id/restore', requireAuth, checkCsrf, (req, res) => {
+  const p = db.prepare('SELECT id, slug, title FROM posts WHERE id = ?').get(req.params.id);
+  if (p) {
+    const restoredBase = String(p.slug || '').replace(new RegExp('-deleted-' + p.id + '$'), '') || slugify(p.title);
+    const slug = uniquePostSlug(restoredBase, p.id);
+    db.prepare('UPDATE posts SET deleted = 0, slug = ? WHERE id = ?').run(slug, p.id);
+    req.session.flash = 'Post restored.';
+  } else {
+    req.session.flash = 'Post not found.';
+  }
+  res.redirect('/admin/posts?deleted=1');
+});
+
+app.post('/admin/posts/:id/permdelete', requireAuth, checkCsrf, (req, res) => {
+  db.prepare('DELETE FROM posts WHERE id = ?').run(req.params.id);
+  req.session.flash = 'Post permanently deleted.';
+  res.redirect('/admin/posts?deleted=1');
 });
 
 app.get('/admin/enquiries', requireAuth, (req, res) => {
