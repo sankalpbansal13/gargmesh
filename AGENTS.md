@@ -154,44 +154,22 @@ File: `data/garg.db` · Access: `src/db.js` (singleton export).
 
 ### Tables
 
-#### `products`
+#### Catalog (Category → Design → Material)
 
-| Column | Type | Notes |
-|--------|------|--------|
-| id | INTEGER PK | |
-| slug | TEXT UNIQUE | URL key `/products/:slug` |
-| name | TEXT NOT NULL | Display name; also used to match sector `products[]` lists |
-| category | TEXT | e.g. Welded Mesh, Perforated Sheet |
-| short_desc | TEXT | Card blurb |
-| description | TEXT | Long body |
-| materials | TEXT | Free text |
-| sizes | TEXT | Free text |
-| grades | TEXT | Free text (migrated) |
-| applications | TEXT | Free text (migrated) |
-| price_from | TEXT | Display string, e.g. `₹85/sqft` |
-| faq | TEXT | JSON array `[{q,a},…]` (migrated) |
-| meta_title / meta_description / meta_keywords | TEXT | SEO |
-| featured | INTEGER | 0/1 — sorts to top on home |
-| rating_value / review_count | REAL/INTEGER | Optional schema columns for AggregateRating |
-| deleted | INTEGER | Soft-delete flag (0 = live) |
-| created_at | TEXT | `datetime('now')` |
+Live catalogue uses:
 
-Public queries **always** filter `deleted = 0`. Soft-deleted products remain in admin via `?deleted=1`.
+| Table | Role |
+|-------|------|
+| `categories` | e.g. Perforated Sheets — `guide_sections` JSON for buying-guide accordions |
+| `designs` | Patterns Perforated 01–29 — `hole_shape`, `hole_mm`, `pitch_mm`, `angle_deg`, `open_area_pct` |
+| `design_materials` | MS / GI / SS / Aluminium / Copper / Brass per design — `price_from`, `grades` |
+| `design_images` | Pattern photos; optional `material_slug` for material-specific renders |
 
-#### `product_images`
+Public URLs: `/products` → `/products/:categorySlug` → `/products/:categorySlug/:designSlug?material=`.
 
-| Column | Type | Notes |
-|--------|------|--------|
-| id | INTEGER PK | |
-| product_id | INTEGER FK | → products.id CASCADE |
-| filename | TEXT | Relative to `public/uploads/` |
-| caption | TEXT | |
-| alt_text | TEXT | SEO alt (migrated) |
-| sort_order | INTEGER | Display order |
-| is_cover | INTEGER | One cover preferred for listing cards |
-| width / height | INTEGER | Measured at upload (CLS prevention) |
+Seed source: `src/seed-data.js` + images from `PERFORATED SHEET/` via `src/seed-images.js`.
 
-Public listing helper `attachCoverImages()` picks first existing cover (by `is_cover DESC, sort_order, id`) and sets `product.image = '/uploads/' + filename`. Rows whose files are missing on disk are skipped via `existingImages()`.
+Legacy `products` / `product_images` tables may still exist empty; public/admin catalogue no longer uses them.
 
 #### `enquiries`
 

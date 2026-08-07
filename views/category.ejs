@@ -1,0 +1,122 @@
+<%- include('partials/_head') %>
+<%- include('partials/_header') %>
+
+<section class="wiz-page">
+  <div class="container">
+    <%- include('partials/_wizard', { wizardStep: 2, category: category }) %>
+    <header class="wiz-head">
+      <p class="wiz-kicker">Step 2 of 3</p>
+      <h1>Choose design</h1>
+      <p class="wiz-help"><%= designs.length %> option<%= designs.length === 1 ? '' : 's' %> in <%= category.name %> — pick one, then choose material.</p>
+    </header>
+
+    <% if (category.slug === 'perforated-sheets') { %>
+    <div class="filter-chips wiz-filters" aria-label="Filter designs">
+      <a class="area-link<%= !shape ? ' is-on' : '' %>" href="/products/<%= category.slug %>">All</a>
+      <a class="area-link<%= shape==='round-60' ? ' is-on' : '' %>" href="/products/<%= category.slug %>?shape=round-60">Round 60°</a>
+      <a class="area-link<%= shape==='round-90' ? ' is-on' : '' %>" href="/products/<%= category.slug %>?shape=round-90">Round 90°</a>
+      <a class="area-link<%= shape==='square' ? ' is-on' : '' %>" href="/products/<%= category.slug %>?shape=square">Square</a>
+      <a class="area-link<%= shape==='hex' ? ' is-on' : '' %>" href="/products/<%= category.slug %>?shape=hex">Hex</a>
+    </div>
+    <% } else if (category.slug === 'ss-welded-mesh') { %>
+    <div class="filter-chips wiz-filters" aria-label="Filter designs">
+      <a class="area-link<%= !shape ? ' is-on' : '' %>" href="/products/<%= category.slug %>">All</a>
+      <a class="area-link<%= shape==='square' ? ' is-on' : '' %>" href="/products/<%= category.slug %>?shape=square">Square</a>
+      <a class="area-link<%= shape==='rect' ? ' is-on' : '' %>" href="/products/<%= category.slug %>?shape=rect">Rectangular</a>
+    </div>
+    <% } %>
+
+    <div class="wiz-grid wiz-grid-designs">
+      <% designs.forEach(function(d){ %>
+      <a href="/products/<%= category.slug %>/<%= d.slug %>" class="wiz-card wiz-card-sm">
+        <div class="wiz-card-media">
+          <% if (d.image) { %>
+            <img src="<%= d.image %>" alt="" width="400" height="300" loading="lazy">
+          <% } else { %>
+            <span class="wiz-card-fallback"><%= d.name %></span>
+          <% } %>
+        </div>
+        <div class="wiz-card-body">
+          <h2><%= d.name %></h2>
+          <p><%= d.short_desc %></p>
+          <% if (d.materials && d.materials.length) { %>
+          <div class="wiz-mat-block">
+            <p class="wiz-mat-label">Material types</p>
+            <ul class="pill-row" aria-label="Material types">
+              <% d.materials.forEach(function(m){ %>
+              <li class="pill pill-mat"><%= m.name %></li>
+              <% }); %>
+            </ul>
+          </div>
+          <% } %>
+          <span class="wiz-card-cta">Select →</span>
+        </div>
+      </a>
+      <% }); %>
+    </div>
+
+    <p class="wiz-back"><a href="/products">← Change sheet type</a></p>
+
+    <% if (typeof guideSections !== 'undefined' && guideSections && guideSections.length) { %>
+    <section class="wiz-detail hub-content">
+      <h2 class="wiz-detail-title"><%= category.name %> — buying guide</h2>
+      <p class="wiz-help">Full product information from our factory guide.</p>
+      <div class="accordion" style="margin-top:1rem">
+        <% guideSections.forEach(function(s){ %>
+        <div class="acc-item">
+          <button class="acc-head" aria-expanded="false" type="button">
+            <span><%= s.title %></span>
+            <span class="acc-sign" aria-hidden="true"><%- include('partials/_icon', {name:'chevron-down', size:16}) %></span>
+          </button>
+          <div class="acc-body">
+            <% if (s.body) { %><p class="hub-body"><%= s.body %></p><% } %>
+            <% if (s.bullets && s.bullets.length) { %>
+            <ul class="wiz-bullets">
+              <% s.bullets.forEach(function(b){ %><li><%= b %></li><% }); %>
+            </ul>
+            <% } %>
+            <% if (s.tables && s.tables.length) { %>
+              <% s.tables.forEach(function(table){ %>
+              <div class="hub-table-wrap">
+                <table class="hub-table">
+                  <% table.forEach(function(row, ri){ %>
+                  <tr>
+                    <% row.forEach(function(cell){ %>
+                      <% if (ri === 0) { %><th><%= cell %></th><% } else { %><td><%= cell %></td><% } %>
+                    <% }); %>
+                  </tr>
+                  <% }); %>
+                </table>
+              </div>
+              <% }); %>
+            <% } %>
+            <% if (s.faqs && s.faqs.length) { %>
+            <div class="hub-faq">
+              <% s.faqs.forEach(function(f){ %>
+              <div class="hub-faq-item">
+                <strong><%= f.q %></strong>
+                <p><%= f.a %></p>
+              </div>
+              <% }); %>
+            </div>
+            <% } %>
+            <% if (s.images && s.images.length) { %>
+            <div class="hub-gallery">
+              <% s.images.forEach(function(img){ %>
+              <figure>
+                <img src="<%= img.src %>" alt="<%= img.alt || category.name %>" loading="lazy" width="400" height="300">
+              </figure>
+              <% }); %>
+            </div>
+            <% } %>
+          </div>
+        </div>
+        <% }); %>
+      </div>
+    </section>
+    <% } %>
+  </div>
+</section>
+
+<%- include('partials/_stickybar') %>
+<%- include('partials/_footer') %>

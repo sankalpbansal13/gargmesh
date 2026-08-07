@@ -1,0 +1,5 @@
+# GARG INDUSTRIAL MESH — Brass Perforated Sheet Buying Guide
+User-agent: *
+Allow: /buying-guide-brass/
+
+Sitemap: https://gargindustrialmesh.com/buying-guide-brass/sitemap.xml

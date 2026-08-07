@@ -16,7 +16,17 @@ if ! command -v docker >/dev/null 2>&1; then
   exit 1
 fi
 
-echo "Starting Garg Industrial Mesh (prod)…"
-docker compose up -d --build
+COMPOSE=(docker compose --env-file .env.prod)
+
+# Enable Cloudflare tunnel only when a non-empty token is present in .env.prod
+TOKEN="$(grep -E '^TUNNEL_TOKEN=' .env.prod | head -n1 | cut -d= -f2- | tr -d '[:space:]' | tr -d '\"' | tr -d \"'\" || true)"
+if [[ -n "${TOKEN}" ]]; then
+  COMPOSE+=(--profile tunnel)
+  echo "Starting Garg Industrial Mesh (prod + Cloudflare tunnel)…"
+else
+  echo "Starting Garg Industrial Mesh (prod, no tunnel — set TUNNEL_TOKEN in .env.prod to enable)…"
+fi
+
+"${COMPOSE[@]}" up -d --build
 echo "Up. Site: http://127.0.0.1:${PORT:-3000} (set SITE_URL in .env.prod for public HTTPS canonicals)"
-docker compose ps
+"${COMPOSE[@]}" ps

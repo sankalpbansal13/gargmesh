@@ -1,0 +1,126 @@
+﻿Copper perforated sheet buying guide â€” sources (re-verified 2026-07-30)
+================================================================================
+Purpose: Primary / near-primary references used to verify technical facts in
+verified-facts.md. Prefer Copper Development Association (copper.org), ASTM
+store/scope text, DIN scope summaries, and perforator technical pages over
+secondary blog summaries.
+
+ASTM B152 / B152M (copper sheet, strip, plate, rolled bar)
+--------------------------------------------------------------------------------
+1. ASTM store â€” B152/B152M Standard Specification for Copper Sheet, Strip, Plate,
+   and Rolled Bar (current edition listed as B152/B152M-24)
+   https://store.astm.org/b0152_b0152m-24.html
+
+2. ASTM B152/B152M text excerpt (scope, UNS list, exclusions B370/B272, ordering,
+   tempers) â€” Triangle Alloy hosted PDF of standard text
+   https://trianglealloy.com/wp-content/uploads/2024/03/ASTM-B152-B152M-tandard-Specification-for-Copper-Sheet-Strip-Plate-and-Rolled-Bar.pdf
+
+3. Intertek Inform â€” ASTM B 152/B152M : 2024 scope listing of UNS Nos.
+   https://www.intertekinform.com/en-au/standards/astm-b-152-b152m-2024-1376554_saig_astm_astm_3440094/
+
+Copper grade data (UNS / CDA)
+--------------------------------------------------------------------------------
+4. Copper Development Association â€” UNS wrought coppers index (C10100â€“C15999)
+   https://uns.copper.org/wrought/coppers.php
+
+5. copper.org alloy page â€” C11000 Electrolytic Tough Pitch (ETP)
+   https://alloys.copper.org/alloy/C11000
+
+6. copper.org alloy page â€” C12200 Phosphorus-Deoxidized, High Residual P (DHP)
+   https://alloys.copper.org/alloy/C12200
+
+7. copper.org alloy page â€” C10100 Oxygen-Free Electronic (OFE)
+   https://alloys.copper.org/alloy/C10100
+
+8. copper.org alloy page â€” C10200 Oxygen-Free (OF)
+   https://alloys.copper.org/alloy/C10200
+
+9. ScienceDirect overview â€” Electrolytic Tough-Pitch Copper (oxygen ppm context;
+   OF / OFE / DHP joining behaviour) â€” use as secondary corroboration only
+   https://www.sciencedirect.com/topics/engineering/electrolytic-tough-pitch-copper
+
+Temper designations
+--------------------------------------------------------------------------------
+10. ASTM B601 â€” Standard Classification for Temper Designations for Copper and
+    Copper Alloysâ€”Wrought and Cast
+    https://store.astm.org/b0601-24.html
+
+11. Copper Development Association â€” Cold Rolled Tempers (H00â€“H08 trade names)
+    https://www.copper.org/applications/industrial/DesignGuide/props/cold_rolled.html
+
+12. Azom â€” Copper Alloys Temper Designations (ASTM B601 O/H series summary)
+    https://www.azom.com/article.aspx?ArticleID=6295
+
+DIN 24041 perforation naming
+--------------------------------------------------------------------------------
+13. SIS (Swedish Institute for Standards) â€” DIN 24041 scope summary (material-
+    independent naming; machining tolerances for steel â‰¤750 MPa and aluminium)
+    https://www.sis.se/en/produkter/testing/particle-size-analysis-sieving/din-24041/
+
+14. Lochanstalt Aherhammer â€” Basic Terms (Rv/Rd/Rg; margins; soft Cu flatness note)
+    http://www.aherhammer.de/en/perforated-sheets/technical-information/basic-terms/
+
+15. Lochanstalt Aherhammer â€” Round holes / DIN 24 041 naming examples (Rv 5â€“8)
+    http://www.aherhammer.de/en/perforated-sheets/round-holes/
+
+16. Lochanstalt Aherhammer â€” Standards and sizes (soft Al/Cu flatness caveat)
+    http://www.aherhammer.de/en/perforated-sheets/technical-information/standards-and-sizes/
+
+17. SchÃ¤fer Lochbleche â€” Perforated metal calculation / order data sheet (DIN 24041
+    abbreviated specification, margins e/f, feed direction)
+    https://www.schaefer-lochbleche.com/fileadmin/Redakteur/LB/PDFs_Mediathek/perforated-metal-calculation.pdf
+
+18. PERFO LINEA â€” Round holes (Rv / Rg naming under DIN 24041)
+    https://www.perfolinea.com/round-holes
+
+Open area formulas
+--------------------------------------------------------------------------------
+19. Direct Metals â€” Open Area Percentage Calculator (DÂ²Ã—90.69/CÂ²; DÂ²Ã—78.54/CÂ²)
+    https://www.directmetals.com/products/perforated-metal/open-area-percentage-calculator/
+
+20. McNICHOLS â€” Perforated Metal Open Area PDF (same constants)
+    https://assets.mcnichols.com/content/dam/mcnichols/resources/PDF/PM-Rd-Sq-Percent-OA.pdf
+    https://assets.mcnichols.com/content/dam/mcnichols/resources/PDF/PM-RD-SQ-POA.pdf
+
+21. Metalex â€” Open area calculation formulas (notes 90.5 approximation variant)
+    https://metlx.com/resources/open-area-calculation/
+
+22. Accurate Perforating â€” Open percent formulas / calculators
+    https://www.accurateperforating.com/resources/patterns/open-percent-formulas
+
+23. Hendrick Manufacturing â€” Open area calculator
+    https://www.hendrickcorp.com/perforated/resources/open-area-calculator/
+
+Punching rules, bridges, blank margins
+--------------------------------------------------------------------------------
+24. Dillinger Fabrik gelochter Bleche â€” Basic terms (1:1 hole/thickness & bridge;
+    blank margin; open area excludes margins; levelness/sabre caveats)
+    https://www.df-perforatedsheets.com/en/engineering/basic-terms-information
+
+25. SyrTech â€” Perforated metal definitions (hole â‰¥ thickness; bar â‰¥ thickness;
+    unfinished vs finished margins)
+    https://www.syrtech.com/perforated-metal-definitions
+
+26. Mate Precision Technologies â€” Technical Solution Guide (small-hole vs thickness
+    ratios by material class: Al / mild steel / stainless)
+    https://www.mate.com/wp-content/uploads/2021/03/LIT00682_TechSolutionsGuide_RevE_LR.pdf
+
+27. Metalex â€” Traits of perforated sheets (hole size vs thickness; unfinished ends)
+    https://metlx.com/blog/3-traits-of-perforated-sheets-to-identify-before-ordering-from-your-manufacturer/
+
+Notes on evidence quality
+--------------------------------------------------------------------------------
+- copper.org alloy pages are treated as authoritative for composition, %IACS
+  physical properties, and fabrication suitability ratings.
+- ASTM B152 full text behind paywall; scope/UNS list verified from ASTM store
+  abstract plus widely circulated standard text (item 2). Year of issue on PO
+  should match the edition the mill certifies to (e.g. -19, -24).
+- DIN 24041 full text is paywalled; naming conventions and scope caveats taken
+  from SIS abstract and major European perforator documentation. Some commercial
+  pages cite â€œDIN EN ISO 24041â€ for quality systems; pattern naming in trade is
+  still overwhelmingly DIN 24041 (Rv, Rg, etc.). Do not equate ISO 7805 or sieve
+  standards with DIN 24041 pattern codes without checking the cited document.
+- Open-area constants 90.69 and 78.54 are industry-standard geometric shortcuts;
+  90.7 is a common rounding. Metalex 90.5 is a coarser approximation â€” flag if used.
+- Punching â€œ1:1â€ rules are fabricator guidelines, not ASTM/DIN mandatory limits
+  for copper specifically.

@@ -1,0 +1,3 @@
+SWD - 25
+LWD - 7
+STRAND WIDTH - 5

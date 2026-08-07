@@ -17,6 +17,7 @@ const { findByName: findCity } = require('./city-data');
 const { sectors: sectorList, findBySlug: findSector, byCity: localitiesByCity, groupedByCity, relatedLocalities } = require('./sector-data');
 const { safeRedirectPath } = require('./safe-redirect');
 const { createSqliteSessionStore } = require('./session-store');
+const { GUIDE_SECTIONS, materialBySlug, buildDesignTech, faqsForDesign } = require('./seed-data');
 
 seedRun();
 
@@ -160,26 +161,31 @@ function existingImages(images) {
   });
 }
 
-// Attach primary/cover image URL onto product rows for listing cards (home, /products, related, areas).
-function attachCoverImages(products) {
-  if (!products || !products.length) return products || [];
-  const ids = products.map(p => p.id);
+// Attach primary/cover image URL onto design rows for listing cards.
+function attachDesignCovers(designs) {
+  if (!designs || !designs.length) return designs || [];
+  const ids = designs.map(d => d.id);
   const placeholders = ids.map(() => '?').join(',');
   const rows = db.prepare(
-    `SELECT product_id, filename FROM product_images
-     WHERE product_id IN (${placeholders})
+    `SELECT design_id, filename FROM design_images
+     WHERE design_id IN (${placeholders})
      ORDER BY is_cover DESC, sort_order ASC, id ASC`
   ).all(...ids);
   const coverById = {};
   for (const row of rows) {
-    if (coverById[row.product_id]) continue;
+    if (coverById[row.design_id]) continue;
     if (!existingImages([row]).length) continue;
-    coverById[row.product_id] = '/uploads/' + path.basename(row.filename);
+    coverById[row.design_id] = '/uploads/' + path.basename(row.filename);
   }
-  return products.map(p => {
-    if (coverById[p.id]) p.image = coverById[p.id];
-    return p;
+  return designs.map(d => {
+    if (coverById[d.id]) d.image = coverById[d.id];
+    return d;
   });
+}
+
+/** @deprecated legacy product covers — kept for any leftover callers */
+function attachCoverImages(products) {
+  return attachDesignCovers(products);
 }
 
 // Long-cache immutable static assets (CSS/JS). 1 year.
@@ -312,51 +318,165 @@ function waLink(productName) {
 app.locals.waLink = waLink;
 app.locals.slugify = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
+const MATERIAL_PILL = {
+  'mild-steel': 'MS',
+  gi: 'GI',
+  'stainless-steel': 'SS',
+  aluminium: 'Al',
+  copper: 'Copper',
+  brass: 'Brass',
+  'ss-304': 'SS 304',
+  'ss-201': 'SS 201',
+  'ss-202': 'SS 202',
+  polycarbonate: 'PC',
+  'nylon-net': 'Net',
+  'pvc-hdpe': 'PVC'
+};
+
+function enrichCategories(categories) {
+  categories.forEach((cat) => {
+    const d = attachDesignCovers(db.prepare(
+      'SELECT * FROM designs WHERE category_id = ? AND deleted = 0 ORDER BY featured DESC, sort_order ASC LIMIT 1'
+    ).all(cat.id))[0];
+    if (d && d.image) cat.image = d.image;
+    cat.design_count = db.prepare(
+      'SELECT COUNT(*) AS c FROM designs WHERE category_id = ? AND deleted = 0'
+    ).get(cat.id).c;
+    const mats = db.prepare(`
+      SELECT DISTINCT m.slug, m.name, MIN(m.sort_order) AS sort_order
+      FROM design_materials m
+      JOIN designs d ON d.id = m.design_id
+      WHERE d.category_id = ? AND d.deleted = 0 AND m.deleted = 0
+      GROUP BY m.slug, m.name
+      ORDER BY sort_order ASC, m.name ASC
+    `).all(cat.id);
+    cat.materials = mats.map((m) => ({
+      slug: m.slug,
+      name: m.name,
+      label: MATERIAL_PILL[m.slug] || m.name
+    }));
+  });
+  return categories;
+}
+
 // ---------- PUBLIC ROUTES ----------
 
 app.get('/', (req, res) => {
-  const products = attachCoverImages(db.prepare('SELECT * FROM products WHERE deleted = 0 ORDER BY featured DESC, name ASC').all());
-  const featured = products.filter(p => p.featured);
-  const categories = [...new Set(products.map(p => p.category))];
+  const categories = enrichCategories(db.prepare(
+    'SELECT * FROM categories WHERE deleted = 0 ORDER BY featured DESC, sort_order ASC, name ASC'
+  ).all());
+  // Featured = product types (categories), never individual designs
+  const featured = categories.filter((c) => c.featured).slice(0, 8);
+  const featuredTypes = featured.length ? featured : categories.slice(0, 8);
   res.render('home', {
     title: 'Industrial Wire Mesh & Perforated Sheets Supplier in Noida | Garg Industrial Mesh',
-    products, featured, categories, page: 'home',
+    products: featuredTypes, featured: featuredTypes, categories, page: 'home',
     sent: req.query.sent === '1'
   });
 });
 
 app.get('/products', (req, res) => {
-  const { material, application, category, q } = req.query;
-  let sql = 'SELECT * FROM products WHERE deleted = 0';
-  const params = [];
-  const qTrim = (q || '').trim();
-  if (qTrim) {
-    const like = '%' + qTrim + '%';
-    sql += ' AND (name LIKE ? OR short_desc LIKE ? OR materials LIKE ? OR applications LIKE ? OR category LIKE ?)';
-    params.push(like, like, like, like, like);
-  }
-  if (material) { sql += ' AND (materials LIKE ? OR category LIKE ?)'; params.push('%' + material + '%', '%' + material + '%'); }
-  if (category) { sql += ' AND category = ?'; params.push(category); }
-  if (application) { sql += ' AND applications LIKE ?'; params.push('%' + application + '%'); }
-  sql += ' ORDER BY featured DESC, name ASC';
-  const products = attachCoverImages(db.prepare(sql).all(...params));
-  const categories = [...new Set(db.prepare('SELECT DISTINCT category FROM products WHERE deleted = 0').all().map(r => r.category))];
+  const categories = enrichCategories(db.prepare(
+    'SELECT * FROM categories WHERE deleted = 0 ORDER BY featured DESC, sort_order ASC, name ASC'
+  ).all());
   res.render('products', {
-    title: 'All Products — Wire Mesh & Perforated Sheets in Noida | Garg Industrial Mesh',
-    products, categories, filters: req.query, page: 'products'
+    title: 'Step 1: Choose sheet type | Garg Industrial Mesh',
+    categories, page: 'products'
   });
 });
 
-app.get('/products/:slug', (req, res) => {
-  const product = db.prepare('SELECT * FROM products WHERE slug = ? AND deleted = 0').get(req.params.slug);
-  if (!product) return res.status(404).render('404', { title: 'Product Not Found' });
-  let images = db.prepare('SELECT * FROM product_images WHERE product_id = ? ORDER BY is_cover DESC, sort_order ASC, id ASC').all(product.id);
-  images = existingImages(images); // skip any rows whose file is missing on disk
-  let faqs = [];
-  try { faqs = product.faq ? JSON.parse(product.faq) : []; } catch (e) { faqs = []; }
-  const related = attachCoverImages(db.prepare('SELECT * FROM products WHERE category = ? AND id != ? AND deleted = 0 ORDER BY featured DESC LIMIT 4').all(product.category, product.id));
-  res.locals.waText = `Hi Garg Industrial Mesh, I'm interested in ${product.name}. Please share price & availability.`;
-  res.render('product', { title: product.meta_title || product.name, meta_description: product.meta_description, meta_keywords: product.meta_keywords, product, images, faqs, related, page: 'product', sent: req.query.sent === '1' });
+app.get('/products/:categorySlug', (req, res) => {
+  const category = db.prepare(
+    'SELECT * FROM categories WHERE slug = ? AND deleted = 0'
+  ).get(req.params.categorySlug);
+  if (!category) return res.status(404).render('404', { title: 'Category Not Found' });
+
+  const shape = (req.query.shape || '').trim();
+  let sql = 'SELECT * FROM designs WHERE category_id = ? AND deleted = 0';
+  const params = [category.id];
+  if (category.slug === 'perforated-sheets') {
+    if (shape === 'round-60') { sql += ' AND hole_shape = ? AND angle_deg = 60'; params.push('Round'); }
+    else if (shape === 'round-90') { sql += ' AND hole_shape = ? AND angle_deg = 90'; params.push('Round'); }
+    else if (shape === 'square') { sql += ' AND hole_shape = ?'; params.push('Square'); }
+    else if (shape === 'hex') { sql += " AND hole_shape LIKE 'Hex%'"; }
+  } else if (category.slug === 'ss-welded-mesh') {
+    if (shape === 'square') { sql += ' AND hole_shape = ?'; params.push('Square'); }
+    else if (shape === 'rect' || shape === 'rectangular') { sql += ' AND hole_shape = ?'; params.push('Rectangular'); }
+  }
+  sql += ' ORDER BY sort_order ASC, name ASC';
+
+  const designs = attachDesignCovers(db.prepare(sql).all(...params));
+  designs.forEach((d) => {
+    const mats = db.prepare(
+      'SELECT slug, name FROM design_materials WHERE design_id = ? AND deleted = 0 ORDER BY sort_order ASC, name ASC'
+    ).all(d.id);
+    d.materials = mats.map((m) => ({
+      slug: m.slug,
+      name: m.name,
+      label: MATERIAL_PILL[m.slug] || m.name
+    }));
+  });
+
+  let guideSections = [];
+  try { guideSections = category.guide_sections ? JSON.parse(category.guide_sections) : []; } catch (e) { guideSections = []; }
+
+  res.locals.waText = `Hi Garg Industrial Mesh, I need ${category.name}. Please share patterns, materials & pricing.`;
+  res.render('category', {
+    title: category.meta_title || `Step 2: Choose design — ${category.name} | Garg Industrial Mesh`,
+    meta_description: category.meta_description || `Step 2: pick a ${category.name} option, then choose material.`,
+    meta_keywords: category.meta_keywords,
+    category, designs, shape, guideSections, page: 'products'
+  });
+});
+
+app.get('/products/:categorySlug/:designSlug', (req, res) => {
+  const category = db.prepare(
+    'SELECT * FROM categories WHERE slug = ? AND deleted = 0'
+  ).get(req.params.categorySlug);
+  if (!category) return res.status(404).render('404', { title: 'Category Not Found' });
+
+  const design = db.prepare(
+    'SELECT * FROM designs WHERE category_id = ? AND slug = ? AND deleted = 0'
+  ).get(category.id, req.params.designSlug);
+  if (!design) return res.status(404).render('404', { title: 'Design Not Found' });
+
+  const materials = db.prepare(
+    'SELECT * FROM design_materials WHERE design_id = ? AND deleted = 0 ORDER BY sort_order ASC, name ASC'
+  ).all(design.id);
+
+  let selected = materials.find(m => m.slug === req.query.material) || materials[0] || null;
+
+  let images = db.prepare(
+    'SELECT * FROM design_images WHERE design_id = ? ORDER BY is_cover DESC, sort_order ASC, id ASC'
+  ).all(design.id);
+  images = existingImages(images);
+
+  // Prefer images tagged for selected material, else cover/generic
+  let displayImages = images;
+  if (selected) {
+    const matImgs = images.filter(i => i.material_slug === selected.slug);
+    if (matImgs.length) displayImages = matImgs;
+  }
+
+  const label = selected ? `${design.name} — ${selected.name}` : design.name;
+  const tech = buildDesignTech(design, category);
+  const materialInfo = selected ? (materialBySlug(selected.slug) || selected) : null;
+  const faqs = faqsForDesign(design);
+  let guideSections = [];
+  try { guideSections = category.guide_sections ? JSON.parse(category.guide_sections) : []; } catch (e) { guideSections = []; }
+  if (category.slug === 'perforated-sheets' && (!guideSections || !guideSections.length)) {
+    guideSections = GUIDE_SECTIONS;
+  }
+
+  res.locals.waText = `Hi Garg Industrial Mesh, I'm interested in ${label}. Please share price & availability.`;
+  res.render('design', {
+    title: design.meta_title || `Step 3: Choose material — ${design.name} | Garg Industrial Mesh`,
+    meta_description: design.meta_description || `Step 3: choose material for ${design.name}.`,
+    meta_keywords: design.meta_keywords,
+    category, design, materials, selected, images: displayImages,
+    tech, materialInfo, guideSections, faqs,
+    page: 'product', sent: req.query.sent === '1'
+  });
 });
 
 app.get('/areas', (req, res) => {
@@ -377,7 +497,12 @@ app.get('/areas/:city', (req, res) => {
       return name ? findCity(name) : null;
     })();
   if (!cityData) return res.status(404).render('404', { title: 'Area Not Found' });
-  const products = attachCoverImages(db.prepare('SELECT * FROM products WHERE deleted = 0 ORDER BY featured DESC, name ASC').all());
+  const products = attachDesignCovers(db.prepare(`
+    SELECT d.*, c.slug AS category_slug, c.name AS category_name
+    FROM designs d JOIN categories c ON c.id = d.category_id
+    WHERE d.deleted = 0 AND c.deleted = 0
+    ORDER BY d.featured DESC, d.sort_order ASC LIMIT 8
+  `).all());
   const localities = localitiesByCity(cityData.slug);
   const city = cityData.slug === 'greater-noida' ? 'Greater Noida' : (cityData.slug.charAt(0).toUpperCase()+cityData.slug.slice(1));
   const breadcrumb = {
@@ -408,10 +533,13 @@ app.get('/areas/:city', (req, res) => {
 app.get('/sectors/:slug', (req, res) => {
   const sector = findSector(req.params.slug);
   if (!sector) return res.status(404).render('404', { title: 'Locality Not Found' });
-  const allProducts = attachCoverImages(db.prepare('SELECT * FROM products WHERE deleted = 0 ORDER BY featured DESC, name ASC').all());
-  const wanted = sector.products || [];
-  const products = allProducts.filter(p => wanted.includes(p.name));
-  const fallback = products.length ? products : allProducts.slice(0, 4);
+  const allProducts = attachDesignCovers(db.prepare(`
+    SELECT d.*, c.slug AS category_slug, c.name AS category_name
+    FROM designs d JOIN categories c ON c.id = d.category_id
+    WHERE d.deleted = 0 AND c.deleted = 0
+    ORDER BY d.featured DESC, d.sort_order ASC LIMIT 8
+  `).all());
+  const fallback = allProducts.slice(0, 4);
   const related = relatedLocalities(sector);
   const locName = sector.locality || sector.sector;
   const breadcrumb = {
@@ -550,7 +678,12 @@ app.post('/enquiry', enquiryLimiter, (req, res) => {
 app.get('/sitemap.xml', (req, res) => {
   res.set('Content-Type', 'application/xml');
   const base = res.locals.site.url;
-  const products = db.prepare('SELECT slug FROM products WHERE deleted = 0').all();
+  const categories = db.prepare('SELECT slug FROM categories WHERE deleted = 0').all();
+  const designs = db.prepare(`
+    SELECT d.slug AS design_slug, c.slug AS category_slug
+    FROM designs d JOIN categories c ON c.id = d.category_id
+    WHERE d.deleted = 0 AND c.deleted = 0
+  `).all();
   const cities = ['noida', 'greater-noida', 'delhi', 'ghaziabad', 'faridabad', 'gurugram'];
   const sectorSlugs = sectorList.map(s => s.slug);
   let xml = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
@@ -563,8 +696,11 @@ app.get('/sitemap.xml', (req, res) => {
       xml += `  <url><loc>${base}/blog/${p.slug}</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>\n`;
     });
   } catch (e) {}
-  products.forEach(p => {
-    xml += `  <url><loc>${base}/products/${p.slug}</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>\n`;
+  categories.forEach(c => {
+    xml += `  <url><loc>${base}/products/${c.slug}</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>\n`;
+  });
+  designs.forEach(d => {
+    xml += `  <url><loc>${base}/products/${d.category_slug}/${d.design_slug}</loc><changefreq>weekly</changefreq><priority>0.85</priority></url>\n`;
   });
   cities.forEach(c => {
     xml += `  <url><loc>${base}/areas/${c}</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>\n`;

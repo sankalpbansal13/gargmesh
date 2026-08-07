@@ -104,7 +104,7 @@ app.get('/admin/logout', (req, res) => {
 });
 
 app.get('/admin/dashboard', requireAuth, (req, res) => {
-  const productCount = db.prepare('SELECT COUNT(*) as c FROM products WHERE deleted = 0').get().c;
+  const productCount = db.prepare('SELECT COUNT(*) as c FROM designs WHERE deleted = 0').get().c;
   const enquiryCount = db.prepare('SELECT COUNT(*) as c FROM enquiries').get().c;
   const postCount = db.prepare('SELECT COUNT(*) as c FROM posts WHERE deleted = 0').get().c;
   const recentEnquiries = db.prepare('SELECT * FROM enquiries ORDER BY id DESC LIMIT 5').all();
@@ -120,16 +120,23 @@ app.get('/admin/products', requireAuth, (req, res) => {
   const q = (req.query.q || '').trim();
   const cat = req.query.category || '';
   const showDeleted = req.query.deleted === '1';
-  let sql = 'SELECT * FROM products WHERE 1=1';
+  let sql = `
+    SELECT d.*, c.name AS category_name, c.slug AS category_slug
+    FROM designs d JOIN categories c ON c.id = d.category_id WHERE 1=1`;
   const params = [];
-  if (showDeleted) { sql += ' AND deleted = 1'; }
-  else { sql += ' AND deleted = 0'; }
-  if (q) { sql += ' AND (name LIKE ? OR short_desc LIKE ?)'; params.push('%'+q+'%','%'+q+'%'); }
-  if (cat) { sql += ' AND category = ?'; params.push(cat); }
-  sql += ' ORDER BY id DESC';
-  const products = db.prepare(sql).all(...params);
-  const categories = [...new Set(db.prepare('SELECT DISTINCT category FROM products WHERE category IS NOT NULL AND deleted = 0').all().map(r => r.category))];
-  res.render('admin/products', { title: 'Manage Products | Admin', products, categories, q, cat, showDeleted, layout: false });
+  if (showDeleted) sql += ' AND d.deleted = 1';
+  else sql += ' AND d.deleted = 0 AND c.deleted = 0';
+  if (q) { sql += ' AND (d.name LIKE ? OR d.short_desc LIKE ?)'; params.push('%' + q + '%', '%' + q + '%'); }
+  if (cat) { sql += ' AND c.slug = ?'; params.push(cat); }
+  sql += ' ORDER BY c.sort_order ASC, d.sort_order ASC';
+  const products = db.prepare(sql).all(...params).map((p) => {
+    const mat = db.prepare(
+      'SELECT price_from FROM design_materials WHERE design_id = ? AND deleted = 0 ORDER BY sort_order ASC LIMIT 1'
+    ).get(p.id);
+    return { ...p, category: p.category_name, price_from: (mat && mat.price_from) || '', slug: p.category_slug + '/' + p.slug };
+  });
+  const categories = db.prepare('SELECT slug FROM categories WHERE deleted = 0 ORDER BY sort_order').all().map(c => c.slug);
+  res.render('admin/products', { title: 'Manage Designs | Admin', products, categories, q, cat, showDeleted, layout: false });
 });
 
 app.get('/admin/products/new', requireAuth, (req, res) => {
@@ -252,54 +259,53 @@ app.put('/admin/products/:id', requireAuth, upload.array('photos', 10), checkCsr
   }
 });
 
-// Quick price update from products list (no full form needed)
+// Quick price update — applies to all materials on a design
 app.post('/admin/products/:id/price', requireAuth, checkCsrf, (req, res) => {
   const id = req.params.id;
-  const product = db.prepare('SELECT id, name FROM products WHERE id = ?').get(id);
-  if (!product) {
-    req.session.flash = 'Product not found.';
+  const design = db.prepare('SELECT id, name FROM designs WHERE id = ?').get(id);
+  if (!design) {
+    req.session.flash = 'Design not found.';
     return res.redirect('/admin/products');
   }
   const price = String(req.body.price_from || '').trim().slice(0, 80);
-  db.prepare('UPDATE products SET price_from = ? WHERE id = ?').run(price, id);
-  req.session.flash = `Price updated for ${product.name}: ${price || '(cleared)'}`;
+  db.prepare('UPDATE design_materials SET price_from = ? WHERE design_id = ? AND deleted = 0').run(price, id);
+  req.session.flash = `Price updated for all materials on ${design.name}: ${price || '(cleared)'}`;
   const back = safeRedirectPath(req.body.redirect, '/admin/products');
   res.redirect(back);
 });
 
-// Soft-delete (default Delete button) — free the live slug for reuse
+// Soft-delete design
 app.delete('/admin/products/:id', requireAuth, checkCsrf, (req, res) => {
-  const p = db.prepare('SELECT id, slug FROM products WHERE id = ?').get(req.params.id);
+  const p = db.prepare('SELECT id, slug FROM designs WHERE id = ?').get(req.params.id);
   if (p) {
-    const base = String(p.slug || 'product').replace(/-deleted-\d+$/, '');
-    const tombstone = uniqueSlug(base + '-deleted-' + p.id);
-    db.prepare('UPDATE products SET deleted = 1, slug = ? WHERE id = ?').run(tombstone, p.id);
+    const tombstone = p.slug + '-deleted-' + p.id;
+    db.prepare('UPDATE designs SET deleted = 1, slug = ? WHERE id = ?').run(tombstone, p.id);
+    req.session.flash = 'Design moved to deleted (restore anytime).';
+  } else {
+    req.session.flash = 'Design not found.';
   }
-  req.session.flash = '🗑️ Product moved to deleted (restore anytime).';
   res.redirect('/admin/products');
 });
 
-// Restore a soft-deleted product and reclaim a clean slug
 app.post('/admin/products/:id/restore', requireAuth, checkCsrf, (req, res) => {
-  const p = db.prepare('SELECT id, slug, name FROM products WHERE id = ?').get(req.params.id);
+  const p = db.prepare('SELECT id, slug, name FROM designs WHERE id = ?').get(req.params.id);
   if (p) {
     const restoredBase = String(p.slug || '').replace(new RegExp('-deleted-' + p.id + '$'), '') || slugify(p.name);
-    const slug = uniqueSlug(restoredBase, p.id);
-    db.prepare('UPDATE products SET deleted = 0, slug = ? WHERE id = ?').run(slug, p.id);
-    req.session.flash = '✅ Product restored.';
+    db.prepare('UPDATE designs SET deleted = 0, slug = ? WHERE id = ?').run(restoredBase, p.id);
+    req.session.flash = 'Design restored.';
   } else {
-    req.session.flash = 'Product not found.';
+    req.session.flash = 'Design not found.';
   }
   res.redirect('/admin/products?deleted=1');
 });
 
-// Permanent (hard) delete — removes product + images + files
 app.post('/admin/products/:id/permdelete', requireAuth, checkCsrf, (req, res) => {
-  const imgs = db.prepare('SELECT filename FROM product_images WHERE product_id = ?').all(req.params.id);
+  const imgs = db.prepare('SELECT filename FROM design_images WHERE design_id = ?').all(req.params.id);
   imgs.forEach(im => unlinkUpload(im.filename));
-  db.prepare('DELETE FROM product_images WHERE product_id = ?').run(req.params.id);
-  db.prepare('DELETE FROM products WHERE id = ?').run(req.params.id);
-  req.session.flash = '🗑️ Product permanently deleted.';
+  db.prepare('DELETE FROM design_images WHERE design_id = ?').run(req.params.id);
+  db.prepare('DELETE FROM design_materials WHERE design_id = ?').run(req.params.id);
+  db.prepare('DELETE FROM designs WHERE id = ?').run(req.params.id);
+  req.session.flash = 'Design permanently deleted.';
   res.redirect('/admin/products?deleted=1');
 });
 

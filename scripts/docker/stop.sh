@@ -10,5 +10,9 @@ if ! command -v docker >/dev/null 2>&1; then
 fi
 
 echo "Stopping Garg Industrial Mesh…"
-docker compose down
+if [[ -f .env.prod ]]; then
+  docker compose --env-file .env.prod --profile tunnel down
+else
+  docker compose --profile tunnel down
+fi
 echo "Stopped."

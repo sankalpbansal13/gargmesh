@@ -1,0 +1,188 @@
+<%- include('partials/_head') %>
+<%- include('partials/_header') %>
+
+<section class="wiz-page">
+  <div class="container">
+    <%- include('partials/_wizard', { wizardStep: 3, category: category, design: design }) %>
+    <header class="wiz-head">
+      <p class="wiz-kicker">Step 3 of 3</p>
+      <h1>Choose material</h1>
+      <p class="wiz-help"><%= design.name %> — pick the metal, then quote. Specs and buying notes are below.</p>
+    </header>
+
+    <div class="wiz-step3">
+      <div class="wiz-preview">
+        <% if (images && images.length) { %>
+          <div class="slider" data-slider>
+            <div class="slider-track">
+              <% images.forEach(function(img, i){ %>
+              <div class="slider-slide">
+                <img src="/uploads/<%= img.filename %>" alt="<%= img.alt_text || (design.name + (selected ? ' in ' + selected.name : '')) %>" width="640" height="640" loading="<%= i===0?'eager':'lazy' %>">
+              </div>
+              <% }); %>
+            </div>
+            <% if (images.length > 1) { %>
+            <button type="button" class="slider-btn slider-prev" aria-label="Previous photo"><%- include('partials/_icon', {name:'chevron-left', size:22}) %></button>
+            <button type="button" class="slider-btn slider-next" aria-label="Next photo"><%- include('partials/_icon', {name:'chevron-right', size:22}) %></button>
+            <div class="slider-dots">
+              <% images.forEach(function(_, i){ %>
+              <button type="button" class="slider-dot <%= i===0?'active':'' %>" aria-label="Go to photo <%= i+1 %>"></button>
+              <% }); %>
+            </div>
+            <% } %>
+          </div>
+        <% } else { %>
+          <div class="wiz-card-fallback"><%= design.name %></div>
+        <% } %>
+        <dl class="wiz-specs">
+          <div><dt>Type</dt><dd><%= category.name %></dd></div>
+          <div><dt>Design</dt><dd><%= design.name %></dd></div>
+          <% if (tech.rows && tech.rows.length) { %>
+            <% tech.rows.forEach(function(r){ %>
+            <div><dt><%= r.dt %></dt><dd><%= r.dd %></dd></div>
+            <% }); %>
+          <% } else { %>
+          <div><dt>Pattern family</dt><dd><%= tech.family %></dd></div>
+          <div><dt>Hole</dt><dd><%= tech.holeLabel %></dd></div>
+          <div><dt>Pitch</dt><dd><%= design.pitch_mm %> mm centre-to-centre</dd></div>
+          <div><dt>Bridge (bar)</dt><dd>≈ <%= tech.bridge_mm %> mm</dd></div>
+          <div><dt>Orientation</dt><dd><%= design.angle_deg %>°</dd></div>
+          <div><dt>Open area</dt><dd><%= design.open_area_pct %>% (field)</dd></div>
+          <% } %>
+        </dl>
+      </div>
+
+      <div class="wiz-materials">
+        <p class="wiz-mat-label">Material types</p>
+        <div class="wiz-mat-list" role="list">
+          <% materials.forEach(function(m){ %>
+          <a role="listitem"
+             class="wiz-mat<%= selected && selected.id===m.id ? ' is-on' : '' %>"
+             href="/products/<%= category.slug %>/<%= design.slug %>?material=<%= m.slug %>"
+             <%= selected && selected.id===m.id ? 'aria-current="true"' : '' %>>
+            <strong><%= m.name %></strong>
+            <span><%= m.grades || 'Ask for grade' %></span>
+            <em><%= m.price_from || 'Ask for quote' %></em>
+          </a>
+          <% }); %>
+        </div>
+
+        <% if (selected) { %>
+        <div class="wiz-quote glass">
+          <p class="wiz-quote-sum"><strong><%= design.name %></strong> · <%= selected.name %></p>
+          <% if (materialInfo && materialInfo.short_desc) { %><p class="wiz-help"><%= materialInfo.short_desc %></p><% } %>
+          <div class="wiz-quote-actions">
+            <a href="<%= waLink(design.name + ' — ' + selected.name) %>" class="btn btn-wa" target="_blank" rel="noopener" data-ga="whatsapp">
+              <%- include('partials/_icon', {name:'whatsapp', size:16}) %> WhatsApp quote
+            </a>
+            <a href="tel:<%= site.phone %>" class="btn btn-ghost" data-ga="call">Call <%= site.phone %></a>
+          </div>
+          <form class="enq-form" method="POST" action="/enquiry" style="margin-top:1rem">
+            <%- include('partials/_enquiry_guard') %>
+            <input type="hidden" name="redirect" value="/products/<%= category.slug %>/<%= design.slug %>?material=<%= selected.slug %>&sent=1">
+            <input type="hidden" name="product" value="<%= design.name %> — <%= selected.name %>">
+            <label>Name <input type="text" name="name" required autocomplete="name"></label>
+            <label>Phone <input type="tel" name="phone" required autocomplete="tel"></label>
+            <label>Message <textarea name="message" rows="3" placeholder="Thickness (mm), sheet size, blank edge, quantity, end use…"></textarea></label>
+            <button type="submit" class="btn btn-amber btn-block" data-ga="enquiry_submit">Send enquiry</button>
+            <% if (sent) { %><p class="form-success">Thanks — we’ll call you shortly.</p><% } %>
+          </form>
+        </div>
+        <% } %>
+      </div>
+    </div>
+
+    <section class="wiz-detail">
+      <h2 class="wiz-detail-title">Understanding <%= design.name %></h2>
+      <p class="wiz-help"><%= tech.plain %></p>
+
+      <div class="wiz-tech-grid">
+        <article class="wiz-tech-card">
+          <h3>Technical specs</h3>
+          <dl class="wiz-specs wiz-specs-plain">
+            <div><dt>Type</dt><dd><%= category.name %></dd></div>
+            <% if (tech.rows && tech.rows.length) { %>
+              <% tech.rows.forEach(function(r){ %>
+              <div><dt><%= r.dt %></dt><dd><%= r.dd %></dd></div>
+              <% }); %>
+              <% if (tech.maxThicknessTip) { %><div><dt>RFQ tip</dt><dd><%= tech.maxThicknessTip %></dd></div><% } %>
+            <% } else { %>
+            <div><dt>Hole</dt><dd><%= tech.holeLabel %></dd></div>
+            <div><dt>Pitch</dt><dd><%= design.pitch_mm %> mm</dd></div>
+            <div><dt>Bridge</dt><dd>≈ <%= tech.bridge_mm %> mm (pitch − hole)</dd></div>
+            <div><dt>Angle</dt><dd><%= design.angle_deg %>° · <%= tech.family %></dd></div>
+            <div><dt>Open area</dt><dd><%= tech.oa_note %></dd></div>
+            <div><dt>Thickness tip</dt><dd><%= tech.maxThicknessTip %></dd></div>
+            <% } %>
+          </dl>
+          <% if (tech.orientation) { %><p class="wiz-help" style="margin-top:0.75rem"><%= tech.orientation %></p><% } %>
+        </article>
+
+        <% if (materialInfo) { %>
+        <article class="wiz-tech-card">
+          <h3>About <%= materialInfo.name %></h3>
+          <% if (materialInfo.detail) { %><p class="wiz-help"><%= materialInfo.detail %></p><% } %>
+          <dl class="wiz-specs wiz-specs-plain" style="margin-top:0.85rem">
+            <% if (materialInfo.grades) { %><div><dt>Grades</dt><dd><%= materialInfo.grades %></dd></div><% } %>
+            <% if (materialInfo.best_for) { %><div><dt>Best for</dt><dd><%= materialInfo.best_for %></dd></div><% } %>
+            <% if (materialInfo.standards) { %><div><dt>Standards</dt><dd><%= materialInfo.standards %></dd></div><% } %>
+            <% if (materialInfo.temper_note) { %><div><dt>Temper</dt><dd><%= materialInfo.temper_note %></dd></div><% } %>
+          </dl>
+        </article>
+        <% } %>
+      </div>
+
+      <div class="wiz-callout">
+        <strong>Before you order</strong>
+        <p>Confirm hole ≥ thickness, name grade + temper, give sheet size and blank edge (0–100 mm custom), and say the end use in one line. Incomplete RFQs become clarification chains.</p>
+      </div>
+    </section>
+
+    <% if (guideSections && guideSections.length) { %>
+    <section class="wiz-detail">
+      <h2 class="wiz-detail-title">Buying guide &amp; technical notes</h2>
+      <p class="wiz-help">From our perforated-sheet buyer guides — skim what you need, then send the RFQ.</p>
+      <div class="accordion" style="margin-top:1rem">
+        <% guideSections.forEach(function(s){ %>
+        <div class="acc-item">
+          <button class="acc-head" aria-expanded="false" type="button">
+            <span><%= s.title %></span>
+            <span class="acc-sign" aria-hidden="true"><%- include('partials/_icon', {name:'chevron-down', size:16}) %></span>
+          </button>
+          <div class="acc-body">
+            <% if (s.body) { %><p><%= s.body %></p><% } %>
+            <% if (s.bullets && s.bullets.length) { %>
+            <ul class="wiz-bullets">
+              <% s.bullets.forEach(function(b){ %><li><%= b %></li><% }); %>
+            </ul>
+            <% } %>
+          </div>
+        </div>
+        <% }); %>
+      </div>
+    </section>
+    <% } %>
+
+    <% if (faqs && faqs.length) { %>
+    <section class="wiz-detail">
+      <h2 class="wiz-detail-title">FAQ — <%= design.name %></h2>
+      <div class="accordion">
+        <% faqs.forEach(function(f){ %>
+        <div class="acc-item">
+          <button class="acc-head" aria-expanded="false" type="button">
+            <span><%= f.q %></span>
+            <span class="acc-sign" aria-hidden="true"><%- include('partials/_icon', {name:'chevron-down', size:16}) %></span>
+          </button>
+          <div class="acc-body"><p><%= f.a %></p></div>
+        </div>
+        <% }); %>
+      </div>
+    </section>
+    <% } %>
+
+    <p class="wiz-back"><a href="/products/<%= category.slug %>">← Change design</a></p>
+  </div>
+</section>
+
+<%- include('partials/_stickybar') %>
+<%- include('partials/_footer') %>

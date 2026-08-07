@@ -71,6 +71,75 @@ CREATE TABLE IF NOT EXISTS posts (
   deleted INTEGER DEFAULT 0,
   created_at TEXT DEFAULT (datetime('now'))
 );
+
+CREATE TABLE IF NOT EXISTS categories (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  slug TEXT UNIQUE NOT NULL,
+  name TEXT NOT NULL,
+  short_desc TEXT,
+  description TEXT,
+  guide_sections TEXT,
+  meta_title TEXT,
+  meta_description TEXT,
+  meta_keywords TEXT,
+  sort_order INTEGER DEFAULT 0,
+  featured INTEGER DEFAULT 0,
+  deleted INTEGER DEFAULT 0,
+  created_at TEXT DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS designs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  category_id INTEGER NOT NULL,
+  slug TEXT NOT NULL,
+  name TEXT NOT NULL,
+  hole_shape TEXT,
+  hole_mm REAL,
+  pitch_mm REAL,
+  angle_deg INTEGER,
+  open_area_pct REAL,
+  short_desc TEXT,
+  description TEXT,
+  applications TEXT,
+  faq TEXT,
+  meta_title TEXT,
+  meta_description TEXT,
+  meta_keywords TEXT,
+  sort_order INTEGER DEFAULT 0,
+  featured INTEGER DEFAULT 0,
+  deleted INTEGER DEFAULT 0,
+  created_at TEXT DEFAULT (datetime('now')),
+  UNIQUE(category_id, slug),
+  FOREIGN KEY(category_id) REFERENCES categories(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS design_materials (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  design_id INTEGER NOT NULL,
+  slug TEXT NOT NULL,
+  name TEXT NOT NULL,
+  price_from TEXT,
+  grades TEXT,
+  short_desc TEXT,
+  sort_order INTEGER DEFAULT 0,
+  deleted INTEGER DEFAULT 0,
+  UNIQUE(design_id, slug),
+  FOREIGN KEY(design_id) REFERENCES designs(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS design_images (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  design_id INTEGER NOT NULL,
+  filename TEXT NOT NULL,
+  caption TEXT,
+  alt_text TEXT,
+  sort_order INTEGER DEFAULT 0,
+  is_cover INTEGER DEFAULT 0,
+  width INTEGER,
+  height INTEGER,
+  material_slug TEXT,
+  FOREIGN KEY(design_id) REFERENCES designs(id) ON DELETE CASCADE
+);
 `);
 
 // Add columns added in this extension if missing (idempotent)

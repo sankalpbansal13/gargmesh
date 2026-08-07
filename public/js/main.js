@@ -3,6 +3,56 @@
   'use strict';
   var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  // --- Theme (light / dark) ---
+  var THEME_KEY = 'gim-theme';
+  var THEME_COLORS = { dark: '#0A0B0C', light: '#F5F6F7' };
+
+  function currentTheme() {
+    var t = document.documentElement.getAttribute('data-theme');
+    return t === 'light' ? 'light' : 'dark';
+  }
+
+  function applyTheme(theme) {
+    var next = theme === 'light' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
+    var meta = document.getElementById('themeColorMeta');
+    if (meta) meta.setAttribute('content', THEME_COLORS[next]);
+    syncThemeToggle();
+  }
+
+  function syncThemeToggle() {
+    var isLight = currentTheme() === 'light';
+    var labelText = isLight ? 'Dark mode' : 'Light mode';
+    var aria = isLight ? 'Switch to dark mode' : 'Switch to light mode';
+    Array.prototype.forEach.call(document.querySelectorAll('[data-theme-toggle]'), function (btn) {
+      btn.setAttribute('aria-pressed', isLight ? 'true' : 'false');
+      btn.setAttribute('aria-label', aria);
+      btn.setAttribute('title', aria);
+      var label = btn.querySelector('.theme-label');
+      if (label) label.textContent = labelText;
+    });
+  }
+
+  (function initTheme() {
+    var stored = null;
+    try { stored = localStorage.getItem(THEME_KEY); } catch (e) {}
+    if (stored === 'light' || stored === 'dark') {
+      applyTheme(stored);
+    } else {
+      var meta = document.getElementById('themeColorMeta');
+      if (meta) meta.setAttribute('content', THEME_COLORS.dark);
+      syncThemeToggle();
+    }
+    Array.prototype.forEach.call(document.querySelectorAll('[data-theme-toggle]'), function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        applyTheme(currentTheme() === 'light' ? 'dark' : 'light');
+      });
+    });
+  })();
+
   // --- Hero: phase 1 outline reveal, then 5s sheet-type carousel ---
   var hero = document.getElementById('heroBrand');
   if (hero && hero.classList.contains('hero-reveal')) {
@@ -326,53 +376,68 @@
     onScroll();
   }
 
-  // --- Mobile nav drawer ---
+  // --- Top-bar nav dropdown (phone sheet + desktop panel) ---
   var toggle = document.getElementById('navToggle');
   var nav = document.getElementById('mainNav');
   if (toggle && nav) {
-    // Keep drawer on <body> so fixed positioning is never trapped by header filters.
+    // Keep on <body> so fixed sheet isn't clipped by header backdrop-filter
     if (nav.parentElement !== document.body) {
       document.body.appendChild(nav);
     }
     var backdrop = document.createElement('div');
     backdrop.className = 'nav-backdrop';
     document.body.appendChild(backdrop);
-    var open = function () {
+
+    var placeNav = function () {
+      var desktop = window.matchMedia && window.matchMedia('(min-width: 900px)').matches;
+      if (desktop) {
+        var r = toggle.getBoundingClientRect();
+        nav.style.top = Math.round(r.bottom + 8) + 'px';
+        nav.style.right = Math.round(window.innerWidth - r.right) + 'px';
+        nav.style.left = 'auto';
+        nav.style.width = '280px';
+      } else {
+        nav.style.top = '';
+        nav.style.right = '';
+        nav.style.left = '';
+        nav.style.width = '';
+      }
+    };
+
+    var openNav = function () {
+      placeNav();
       nav.classList.add('open');
       backdrop.classList.add('open');
       toggle.setAttribute('aria-expanded', 'true');
       toggle.setAttribute('aria-label', 'Close menu');
-      document.documentElement.style.overflow = 'hidden';
-      if (!nav.querySelector('.drawer-close')) {
-        var close = document.createElement('button');
-        close.type = 'button';
-        close.className = 'drawer-close';
-        close.setAttribute('aria-label', 'Close menu');
-        close.innerHTML = '&times;';
-        nav.insertBefore(close, nav.firstChild);
-        close.addEventListener('click', closeNav);
-      }
     };
     var closeNav = function () {
       nav.classList.remove('open');
       backdrop.classList.remove('open');
       toggle.setAttribute('aria-expanded', 'false');
       toggle.setAttribute('aria-label', 'Open menu');
-      document.documentElement.style.overflow = '';
     };
     toggle.addEventListener('click', function (e) {
       e.preventDefault();
       e.stopPropagation();
       if (nav.classList.contains('open')) closeNav();
-      else open();
+      else openNav();
     });
     backdrop.addEventListener('click', closeNav);
     Array.prototype.forEach.call(nav.querySelectorAll('a'), function (a) {
       a.addEventListener('click', closeNav);
     });
+    document.addEventListener('click', function (e) {
+      if (!nav.classList.contains('open')) return;
+      if (toggle.contains(e.target) || nav.contains(e.target)) return;
+      closeNav();
+    });
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape' && nav.classList.contains('open')) closeNav();
     });
+    window.addEventListener('resize', function () {
+      if (nav.classList.contains('open')) placeNav();
+    }, { passive: true });
   }
 
   // --- Accordion ---

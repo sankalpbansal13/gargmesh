@@ -3,25 +3,37 @@
   <div class="header-glass" aria-hidden="true"></div>
   <div class="container header-inner">
     <a href="/" class="logo" aria-label="Garg Industrial Mesh Home">
-      <img class="logo-img" src="/logo-white.png" alt="Garg Industrial Mesh" width="200" height="48" decoding="async">
+      <img class="logo-img logo-dark" src="/logo-white.png" alt="Garg Industrial Mesh" width="200" height="48" decoding="async">
+      <img class="logo-img logo-light" src="/logo.png" alt="Garg Industrial Mesh" width="200" height="48" decoding="async">
     </a>
-    <nav class="main-nav" id="mainNav" aria-label="Main navigation">
-      <% const pg = typeof page !== 'undefined' ? page : ''; %>
-      <a href="/" class="<%= pg==='home'?'active':'' %>">Home</a>
-      <a href="/products" class="<%= pg==='products'?'active':'' %>">Products</a>
-      <a href="/areas" class="<%= pg==='areas'||pg==='area'||pg==='sector'?'active':'' %>">Areas</a>
-      <a href="/about" class="<%= pg==='about'?'active':'' %>">About</a>
-      <a href="/contact" class="<%= pg==='contact'?'active':'' %>">Contact</a>
-      <a href="/blog" class="<%= pg==='blog'||pg==='post'?'active':'' %>">Blog</a>
-    </nav>
     <div class="header-actions">
+      <button type="button" class="icon-btn theme-toggle-bar" data-theme-toggle aria-pressed="false" aria-label="Switch to light mode" title="Light / dark mode">
+        <span class="theme-ico-sun" aria-hidden="true"><%- include('_icon', {name:'sun', size:20}) %></span>
+        <span class="theme-ico-moon" aria-hidden="true"><%- include('_icon', {name:'moon', size:20}) %></span>
+      </button>
       <a href="tel:<%= site.phone %>" class="icon-btn" aria-label="Call now" title="Call now">
         <%- include('_icon', {name:'phone', size:20}) %>
       </a>
       <a href="/contact" class="btn btn-amber btn-sm btn-quote">Get Quote</a>
-      <button type="button" class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false">
-        <%- include('_icon', {name:'menu', size:22}) %>
-      </button>
+      <div class="nav-menu" id="navMenu">
+        <button type="button" class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false" aria-controls="mainNav" aria-haspopup="true">
+          <%- include('_icon', {name:'menu', size:22}) %>
+        </button>
+        <nav class="main-nav" id="mainNav" aria-label="Main navigation">
+          <% const pg = typeof page !== 'undefined' ? page : ''; %>
+          <a href="/" class="<%= pg==='home'?'active':'' %>">Home</a>
+          <a href="/products" class="<%= pg==='products'||pg==='product'?'active':'' %>">Products</a>
+          <a href="/areas" class="<%= pg==='areas'||pg==='area'||pg==='sector'?'active':'' %>">Areas</a>
+          <a href="/about" class="<%= pg==='about'?'active':'' %>">About</a>
+          <a href="/contact" class="<%= pg==='contact'?'active':'' %>">Contact</a>
+          <a href="/blog" class="<%= pg==='blog'||pg==='post'?'active':'' %>">Blog</a>
+          <button type="button" class="theme-toggle-drawer" data-theme-toggle aria-pressed="false" aria-label="Switch to light mode">
+            <span class="theme-ico-sun" aria-hidden="true"><%- include('_icon', {name:'sun', size:18}) %></span>
+            <span class="theme-ico-moon" aria-hidden="true"><%- include('_icon', {name:'moon', size:18}) %></span>
+            <span class="theme-label">Light mode</span>
+          </button>
+        </nav>
+      </div>
     </div>
   </div>
 </header>

@@ -14,13 +14,19 @@ if [[ ! -f .env.prod ]]; then
   exit 1
 fi
 
-# If the service is not running, bring the stack up; otherwise restart in place.
-if docker compose ps --status running --services 2>/dev/null | grep -qx 'web'; then
-  echo "Restarting running stack…"
-  docker compose restart
-else
-  echo "Stack not running — starting…"
-  docker compose up -d --build
+COMPOSE=(docker compose --env-file .env.prod)
+TOKEN="$(grep -E '^TUNNEL_TOKEN=' .env.prod | head -n1 | cut -d= -f2- | tr -d '[:space:]' | tr -d '\"' | tr -d \"'\" || true)"
+if [[ -n "${TOKEN}" ]]; then
+  COMPOSE+=(--profile tunnel)
 fi
 
-docker compose ps
+# If the service is not running, bring the stack up; otherwise restart in place.
+if "${COMPOSE[@]}" ps --status running --services 2>/dev/null | grep -qx 'web'; then
+  echo "Restarting running stack…"
+  "${COMPOSE[@]}" restart
+else
+  echo "Stack not running — starting…"
+  "${COMPOSE[@]}" up -d --build
+fi
+
+"${COMPOSE[@]}" ps

@@ -1,0 +1,26 @@
+<%
+  const step = typeof wizardStep !== 'undefined' ? wizardStep : 1;
+  const cat = typeof category !== 'undefined' ? category : null;
+  const des = typeof design !== 'undefined' ? design : null;
+%>
+<nav class="wiz" aria-label="Product steps">
+  <ol class="wiz-steps">
+    <li class="wiz-step<%= step===1?' is-current':'' %><%= step>1?' is-done':'' %>">
+      <% if (step > 1) { %><a href="/products"><span class="wiz-num">1</span><span class="wiz-label">Sheet type</span></a>
+      <% } else { %><span class="wiz-num">1</span><span class="wiz-label">Sheet type</span><% } %>
+    </li>
+    <li class="wiz-step<%= step===2?' is-current':'' %><%= step>2?' is-done':'' %>">
+      <% if (step > 2 && cat) { %><a href="/products/<%= cat.slug %>"><span class="wiz-num">2</span><span class="wiz-label">Design</span></a>
+      <% } else { %><span class="wiz-num">2</span><span class="wiz-label">Design</span><% } %>
+    </li>
+    <li class="wiz-step<%= step===3?' is-current':'' %>">
+      <span class="wiz-num">3</span><span class="wiz-label">Material</span>
+    </li>
+  </ol>
+  <% if (step >= 2 && cat) { %>
+  <p class="wiz-path">
+    <span><%= cat.name %></span>
+    <% if (des) { %> <span class="wiz-sep">→</span> <span><%= des.name %></span><% } %>
+  </p>
+  <% } %>
+</nav>

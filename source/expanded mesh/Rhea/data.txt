@@ -1,0 +1,3 @@
+SWD - 40
+LWD - 15
+STRAND WIDTH - 12

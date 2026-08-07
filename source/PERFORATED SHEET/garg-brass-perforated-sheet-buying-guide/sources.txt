@@ -1,0 +1,25 @@
+Primary / near-primary references used for brass guide technical claims
+=====================================================================
+
+Alloy designations & compositions (UNS / CDA practice)
+- Copper Development Association (copper.org) alloy data sheets for C23000, C26000, C27000, C28000
+- Unified Numbering System (UNS) designations for wrought brasses
+
+Product standards
+- ASTM B36 / B36M — Brass Plate, Sheet, Strip, and Rolled Bar (scope, temper, chemistry for blank sheet)
+- ASTM B601 — Standard Classification for Temper Designations for Copper and Copper Alloys—Wrought and Cast
+- ASTM B152 / B152M — Copper Sheet (cited only to distinguish from brass B36; not primary for brass)
+
+Perforation geometry
+- Industry open-area formulas for round 60° (≈ D²×90.69/P²) and round 90° (≈ D²×78.54/P²)
+- DIN 24041 family pattern naming (Rv / Rg etc.) — geometry naming independent of material
+
+Punching practice
+- Perforator industry guideline: hole ≥ thickness; bridge ≥ thickness (starting rule)
+
+Density
+- Typical wrought brass density ~8.4–8.5 g/cm³ (alloy-dependent; confirm mill data for weight-critical jobs)
+
+Notes
+- Do not invent BIS numbers without a purchased standard edition.
+- Mill certificates cover blank sheet; perforation dimensions are drawing/inspection items.

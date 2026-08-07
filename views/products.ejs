@@ -1,71 +1,48 @@
-<% const meta_description = "Buy wire mesh, perforated sheets, expanded mesh (MS/GI/SS/Alu/copper/brass), welded mesh, chain link, bird & monkey spikes in Noida. Garg Industrial Mesh. Get a quote."; %>
+<% const meta_description = "Step 1: choose your sheet type — perforated sheets and more from Garg Industrial Mesh, Noida."; %>
 <%- include('partials/_head', { meta_description: meta_description }) %>
 <%- include('partials/_header') %>
 
-<section class="page-head">
+<section class="wiz-page">
   <div class="container">
-    <span class="eyebrow">Our catalogue</span>
-    <h1>All Wire Mesh &amp; Perforated Sheet Products</h1>
-    <p>Manufactured and supplied by Garg Industrial Mesh, Noida — across Delhi NCR. Filter by category or application to find your product.</p>
-  </div>
-</section>
+    <%- include('partials/_wizard', { wizardStep: 1 }) %>
+    <header class="wiz-head">
+      <p class="wiz-kicker">Step 1 of 3</p>
+      <h1>Choose sheet type</h1>
+      <p class="wiz-help">Pick the kind of sheet you need. Next you’ll choose the hole pattern, then the metal.</p>
+    </header>
 
-<section class="section">
-  <div class="container products-layout">
-    <button type="button" class="filter-toggle" id="filterToggle" aria-expanded="<%= (filters.q || filters.category || filters.material || filters.application) ? 'true' : 'false' %>" aria-controls="filterSidebar">Filter products</button>
-    <aside class="filter-sidebar<%= (filters.q || filters.category || filters.material || filters.application) ? ' is-open' : '' %>" id="filterSidebar">
-      <span class="eyebrow">Refine</span>
-      <h2>Filter Products</h2>
-      <form method="GET" action="/products" class="filter-form">
-        <label>Search
-          <input type="search" name="q" value="<%= filters.q || '' %>" placeholder="e.g. welded mesh, bird spikes">
-        </label>
-        <label>Category
-          <select name="category">
-            <option value="">All categories</option>
-            <% categories.forEach(function(c){ %>
-              <option value="<%= c %>" <%= filters.category===c?'selected':'' %>><%= c %></option>
-            <% }); %>
-          </select>
-        </label>
-        <label>Material
-          <select name="material">
-            <option value="">All materials</option>
-            <option value="Stainless Steel" <%= filters.material==='Stainless Steel'?'selected':'' %>>Stainless Steel</option>
-            <option value="Galvanised" <%= filters.material==='Galvanised'?'selected':'' %>>Galvanised (GI)</option>
-            <option value="Mild Steel" <%= filters.material==='Mild Steel'?'selected':'' %>>Mild Steel (MS)</option>
-            <option value="PVC" <%= filters.material==='PVC'?'selected':'' %>>PVC Coated</option>
-            <option value="Aluminium" <%= filters.material==='Aluminium'?'selected':'' %>>Aluminium</option>
-            <option value="Copper" <%= filters.material==='Copper'?'selected':'' %>>Copper</option>
-            <option value="Brass" <%= filters.material==='Brass'?'selected':'' %>>Brass</option>
-            <option value="HDPE" <%= filters.material==='HDPE'?'selected':'' %>>HDPE</option>
-          </select>
-        </label>
-        <label>Application
-          <select name="application">
-            <option value="">All applications</option>
-            <option value="Fencing" <%= filters.application==='Fencing'?'selected':'' %>>Fencing</option>
-            <option value="Filtration" <%= filters.application==='Filtration'?'selected':'' %>>Filtration</option>
-            <option value="Construction" <%= filters.application==='Construction'?'selected':'' %>>Construction</option>
-            <option value="Security" <%= filters.application==='Security'?'selected':'' %>>Security</option>
-            <option value="Safety" <%= filters.application==='Safety'?'selected':'' %>>Safety</option>
-          </select>
-        </label>
-        <button type="submit" class="btn btn-amber btn-block">Apply filters</button>
-        <a href="/products" class="btn btn-ghost btn-block">Clear</a>
-      </form>
-    </aside>
-
-    <div class="products-main">
-      <p class="result-count"><%= products.length %> product(s) found</p>
-      <div class="product-grid">
-        <% products.forEach(function(p){ %>
-          <%- include('partials/_productcard', {product: p}) %>
-        <% }); %>
-      </div>
-      <% if (products.length === 0) { %>
-        <p class="empty-state">No products match your filter. <a href="/products">Clear filters</a> or <a href="https://wa.me/<%= site.whatsapp %>">WhatsApp us</a>.</p>
+    <div class="wiz-grid">
+      <% if (!categories.length) { %>
+        <p class="wiz-help">Catalogue updating — call <%= site.phone %> for a quote.</p>
       <% } %>
+      <% categories.forEach(function(c){ %>
+      <a href="/products/<%= c.slug %>" class="wiz-card">
+        <div class="wiz-card-media">
+          <% if (c.image) { %>
+            <img src="<%= c.image %>" alt="" width="480" height="360" loading="lazy">
+          <% } else { %>
+            <span class="wiz-card-fallback"><%= c.name %></span>
+          <% } %>
+        </div>
+        <div class="wiz-card-body">
+          <h2>
+            <%= c.name %>
+            <span class="pill pill-count"><%= c.design_count || 0 %> designs</span>
+          </h2>
+          <% if (c.materials && c.materials.length) { %>
+          <div class="wiz-mat-block">
+            <p class="wiz-mat-label">Material types</p>
+            <ul class="pill-row" aria-label="Material types">
+              <% c.materials.forEach(function(m){ %>
+              <li class="pill pill-mat"><%= m.name %></li>
+              <% }); %>
+            </ul>
+          </div>
+          <% } %>
+          <span class="wiz-card-cta">Select →</span>
+        </div>
+      </a>
+      <% }); %>
     </div>
   </div>
 </section>

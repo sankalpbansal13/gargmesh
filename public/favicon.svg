@@ -1,10 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
-  <rect width="64" height="64" fill="#0D0D0D"/>
-  <g fill="#FFFFFF" transform="translate(2,2) scale(0.75)">
-    <path d="M18 10 L62 10 L62 22 L30 22 L18 34 Z"/>
-    <path d="M18 10 L30 22 L30 58 L18 70 Z"/>
-    <path d="M18 70 L30 58 L62 58 L62 70 Z"/>
-    <path d="M50 40 L62 40 L62 70 L50 58 Z"/>
-    <path d="M38 40 L62 40 L62 52 L38 52 Z"/>
-  </g>
+  <!-- Brand G mark matching logo.png (fallback if a client prefers SVG) -->
+  <rect width="64" height="64" fill="#FFFFFF"/>
+  <path fill="#0D0D0D" d="M18.5 12.5h27l6 6v9H38.5v4H51.5v16l-6 6h-27l-6-6V18.5l6-6zm4 7.5v24.5l3.5 3.5h20l3.5-3.5V38.5H35.5v-11h14.5V22l-3.5-3.5h-20L22.5 22z"/>
 </svg>

@@ -1,6 +1,7 @@
-<% const slug = product.slug || slugify(product.name); %>
+<% const catSlug = product.category_slug || 'perforated-sheets'; %>
+<% const href = '/products/' + catSlug + '/' + (product.slug || slugify(product.name)); %>
 <article class="product-card reveal">
-  <a href="/products/<%= slug %>" class="pc-media">
+  <a href="<%= href %>" class="pc-media">
     <% if (product.image) { %>
       <img src="<%= product.image %>" alt="<%= product.name %> in Noida — Garg Industrial Mesh" loading="lazy" width="600" height="450">
     <% } else { %>
@@ -10,14 +11,11 @@
     <% } %>
   </a>
   <div class="pc-body">
-    <% if (product.category) { %><span class="pc-cat"><%= product.category %></span><% } %>
-    <h3 class="pc-title"><a href="/products/<%= slug %>"><%= product.name %></a></h3>
+    <% if (product.category_name || product.hole_shape) { %><span class="pc-cat"><%= product.category_name || (product.hole_shape + ' · ' + product.angle_deg + '°') %></span><% } %>
+    <h3 class="pc-title"><a href="<%= href %>"><%= product.name %></a></h3>
     <p class="pc-spec"><%= product.short_desc %></p>
-    <% if (product.price_from) { %><p class="pc-price">From <%= product.price_from %></p><% } %>
     <div class="pc-actions">
-      <button type="button" class="btn btn-amber btn-sm pc-enquiry" data-ga="add_to_enquiry" data-add-enquiry data-id="<%= product.id %>" data-name="<%= product.name %>" data-slug="<%= slug %>">
-        Add to enquiry
-      </button>
+      <a href="<%= href %>" class="btn btn-amber btn-sm">View &amp; choose material</a>
       <a href="<%= waLink(product.name) %>" class="btn btn-wa btn-sm" target="_blank" rel="noopener" aria-label="WhatsApp about <%= product.name %>" data-ga="whatsapp">
         <%- include('_icon', {name:'whatsapp', size:14}) %> WhatsApp
       </a>

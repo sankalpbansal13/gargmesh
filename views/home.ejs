@@ -22,7 +22,7 @@ const whys = [
   {h:'Cut to size', p:'Sheets and rolls prepared to your exact project dimensions.'},
   {h:'Pan-NCR delivery', p:'Noida, Greater Noida, Delhi, Ghaziabad, Faridabad, Gurugram.'}
 ];
-const showProducts = (typeof featured !== 'undefined' && featured.length) ? featured.slice(0, 8) : products.slice(0, 8);
+const showTypes = (typeof featured !== 'undefined' && featured.length) ? featured.slice(0, 8) : (typeof categories !== 'undefined' ? categories.slice(0, 8) : []);
 %>
 <% const jsonLd = localBusiness; %>
 <% const extraLd = [faqLd, organization, website]; %>
@@ -66,19 +66,44 @@ const showProducts = (typeof featured !== 'undefined' && featured.length) ? feat
 
 <section class="section">
   <div class="container">
-    <div class="section-head reveal">
-      <span class="eyebrow">Catalogue</span>
-      <h2>Featured products</h2>
-      <p class="section-sub">Popular grades in stock — request a quote for wholesale pricing.</p>
+    <div class="section-head section-head-row reveal">
+      <div>
+        <span class="eyebrow">Catalogue</span>
+        <h2>Featured products</h2>
+        <p class="section-sub">Choose a sheet type — then pick a design and material.</p>
+      </div>
+      <a href="/products" class="btn btn-ghost btn-sm section-see-all">See all</a>
     </div>
-    <div class="product-grid reveal-stagger">
-      <% showProducts.forEach(function(p){ %>
-        <%- include('partials/_productcard', {product: p}) %>
+    <div class="wiz-grid reveal-stagger">
+      <% showTypes.forEach(function(c){ %>
+      <a href="/products/<%= c.slug %>" class="wiz-card reveal">
+        <div class="wiz-card-media">
+          <% if (c.image) { %>
+            <img src="<%= c.image %>" alt="" width="480" height="360" loading="lazy">
+          <% } else { %>
+            <span class="wiz-card-fallback"><%= c.name %></span>
+          <% } %>
+        </div>
+        <div class="wiz-card-body">
+          <h2>
+            <%= c.name %>
+            <span class="pill pill-count"><%= c.design_count || 0 %> designs</span>
+          </h2>
+          <% if (c.materials && c.materials.length) { %>
+          <div class="wiz-mat-block">
+            <p class="wiz-mat-label">Material types</p>
+            <ul class="pill-row" aria-label="Material types">
+              <% c.materials.forEach(function(m){ %>
+              <li class="pill pill-mat"><%= m.name %></li>
+              <% }); %>
+            </ul>
+          </div>
+          <% } %>
+          <span class="wiz-card-cta">Select →</span>
+        </div>
+      </a>
       <% }); %>
     </div>
-    <p style="margin-top:1.25rem" class="reveal">
-      <a href="/products" class="btn btn-ghost">View all products</a>
-    </p>
   </div>
 </section>
 

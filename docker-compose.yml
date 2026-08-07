@@ -1,4 +1,4 @@
-# Production stack: Express app + Cloudflare Tunnel
+# Production stack: Express app + optional Cloudflare Tunnel
 #
 # cloudflared only forwards HTTPS from Cloudflare → the web container.
 # In Zero Trust, set the public hostname service URL to: http://web:3000
@@ -6,6 +6,13 @@
 # Usage:
 #   cp .env.prod.example .env.prod   # fill SITE_URL, secrets, TUNNEL_TOKEN
 #   ./scripts/docker/start.sh
+#
+# Local build / run without tunnel (no TUNNEL_TOKEN needed):
+#   docker compose --env-file .env.prod build
+#   docker compose --env-file .env.prod up -d
+#
+# Tunnel profile starts only when TUNNEL_TOKEN is set (via start.sh), or manually:
+#   docker compose --env-file .env.prod --profile tunnel up -d
 #
 # Do NOT reuse another project's TUNNEL_TOKEN (e.g. FitCV). Create a new tunnel.
 
@@ -16,7 +23,7 @@ services:
     env_file:
       - .env.prod
     environment:
-      DEBUG: "0"
+      DEBUG: "1"
     # Host port optional (local curl / debug). Tunnel uses Docker network, not this.
     ports:
       - "${PORT:-3000}:3000"
@@ -32,12 +39,13 @@ services:
       start_period: 20s
 
   cloudflared:
+    profiles: ["tunnel"]
     image: cloudflare/cloudflared:latest
     container_name: gargmesh-cloudflared
     restart: unless-stopped
     command: tunnel run
     environment:
-      TUNNEL_TOKEN: ${TUNNEL_TOKEN:?Set TUNNEL_TOKEN in .env.prod — new Cloudflare tunnel token}
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN:-}
     depends_on:
       - web
 

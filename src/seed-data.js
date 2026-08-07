@@ -1,378 +1,487 @@
-const slugify = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+const slugify = (s) => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
-// Build a unique, SEO-friendly FAQ set per product from its data.
-function buildFaq(p) {
-  const faq = [
-    {
-      q: `What is ${p.name} used for?`,
-      a: `${p.name} is used for ${p.applications.toLowerCase()}. ${p.short_desc}`
-    },
-    {
-      q: `What sizes and grades of ${p.name} are available in Noida?`,
-      a: `We supply ${p.name} in ${p.sizes.toLowerCase()}. ${p.grades ? ('Available grades/variants: ' + p.grades + '.') : ''} Custom cutting to your project size is available.`
-    },
-    {
-      q: `What is the price of ${p.name} in Noida?`,
-      a: `${p.name} starts from ${p.price_from}. Final pricing depends on grade, size and quantity. Call 9910238277 or WhatsApp us for an exact quote with same-day response.`
-    },
-    {
-      q: `Do you deliver ${p.name} to Greater Noida, Delhi, Ghaziabad, Faridabad and Gurugram?`,
-      a: `Yes. Garg Industrial Mesh delivers ${p.name} across Noida, Greater Noida, Delhi, Ghaziabad, Faridabad and Gurugram with same-day dispatch for in-stock items.`
-    },
-    {
-      q: `Is ${p.name} available in bulk for project orders?`,
-      a: `Yes. We supply ${p.name} in bulk for construction, industrial and architectural projects at direct manufacturer wholesale rates. Contact us for a project quote.`
-    }
-  ];
-  return JSON.stringify(faq);
-}
+/** Shared geometry for Perforated 01–29 (from PERFORATED SHEET copper table). */
+const PERFORATED_DESIGNS = [
+  { n: 1, hole_shape: 'Round', hole_mm: 2, pitch_mm: 3.5, angle_deg: 60, open_area_pct: 29.6 },
+  { n: 2, hole_shape: 'Round', hole_mm: 3, pitch_mm: 5, angle_deg: 60, open_area_pct: 32.7 },
+  { n: 3, hole_shape: 'Round', hole_mm: 4, pitch_mm: 5.5, angle_deg: 60, open_area_pct: 48.0 },
+  { n: 4, hole_shape: 'Round', hole_mm: 5, pitch_mm: 8, angle_deg: 60, open_area_pct: 35.4 },
+  { n: 5, hole_shape: 'Round', hole_mm: 6, pitch_mm: 9, angle_deg: 60, open_area_pct: 40.3 },
+  { n: 6, hole_shape: 'Round', hole_mm: 8, pitch_mm: 11, angle_deg: 60, open_area_pct: 48.0 },
+  { n: 7, hole_shape: 'Round', hole_mm: 10, pitch_mm: 14, angle_deg: 60, open_area_pct: 46.3 },
+  { n: 8, hole_shape: 'Round', hole_mm: 12, pitch_mm: 16, angle_deg: 60, open_area_pct: 51.0 },
+  { n: 9, hole_shape: 'Round', hole_mm: 15, pitch_mm: 21, angle_deg: 60, open_area_pct: 46.3 },
+  { n: 10, hole_shape: 'Round', hole_mm: 20, pitch_mm: 28, angle_deg: 60, open_area_pct: 46.3 },
+  { n: 11, hole_shape: 'Round', hole_mm: 25, pitch_mm: 30, angle_deg: 60, open_area_pct: 63.0 },
+  { n: 12, hole_shape: 'Round', hole_mm: 30, pitch_mm: 40, angle_deg: 60, open_area_pct: 51.0 },
+  { n: 13, hole_shape: 'Round', hole_mm: 3, pitch_mm: 8, angle_deg: 90, open_area_pct: 11.0 },
+  { n: 14, hole_shape: 'Round', hole_mm: 4, pitch_mm: 9.5, angle_deg: 90, open_area_pct: 13.9 },
+  { n: 15, hole_shape: 'Round', hole_mm: 5, pitch_mm: 14, angle_deg: 90, open_area_pct: 10.0 },
+  { n: 16, hole_shape: 'Round', hole_mm: 8, pitch_mm: 16, angle_deg: 90, open_area_pct: 19.6 },
+  { n: 17, hole_shape: 'Round', hole_mm: 10, pitch_mm: 20, angle_deg: 90, open_area_pct: 19.6 },
+  { n: 18, hole_shape: 'Round', hole_mm: 12, pitch_mm: 26, angle_deg: 90, open_area_pct: 16.7 },
+  { n: 19, hole_shape: 'Square', hole_mm: 4, pitch_mm: 6, angle_deg: 90, open_area_pct: 44.4 },
+  { n: 20, hole_shape: 'Square', hole_mm: 5, pitch_mm: 7, angle_deg: 90, open_area_pct: 51.0 },
+  { n: 21, hole_shape: 'Square', hole_mm: 6, pitch_mm: 8, angle_deg: 90, open_area_pct: 56.3 },
+  { n: 22, hole_shape: 'Square', hole_mm: 8, pitch_mm: 11, angle_deg: 90, open_area_pct: 52.9 },
+  { n: 23, hole_shape: 'Square', hole_mm: 10, pitch_mm: 13, angle_deg: 90, open_area_pct: 59.2 },
+  { n: 24, hole_shape: 'Square', hole_mm: 15, pitch_mm: 21, angle_deg: 90, open_area_pct: 51.0 },
+  { n: 25, hole_shape: 'Hexagonal', hole_mm: 6, pitch_mm: 8, angle_deg: 60, open_area_pct: 56.3 },
+  { n: 26, hole_shape: 'Hexagonal', hole_mm: 7, pitch_mm: 10, angle_deg: 60, open_area_pct: 49.0 },
+  { n: 27, hole_shape: 'Hexagonal', hole_mm: 8, pitch_mm: 10, angle_deg: 60, open_area_pct: 64.0 },
+  { n: 28, hole_shape: 'Hexagonal', hole_mm: 10, pitch_mm: 12.5, angle_deg: 60, open_area_pct: 64.0 },
+  { n: 29, hole_shape: 'Hexagonal', hole_mm: 12, pitch_mm: 14, angle_deg: 60, open_area_pct: 73.5 }
+];
 
-const products = [
+const MATERIALS = [
   {
-    name: 'SS Welded Mesh',
-    category: 'Welded Mesh',
-    short_desc: 'Stainless steel welded wire mesh in grade 201 and 304 for industrial, filtration and security use.',
-    description: 'SS Welded Mesh is manufactured from stainless steel wire resistance-welded at every intersection to form a rigid, corrosion-resistant grid. Available in grades 201 and 304, it offers excellent strength, weld integrity and surface finish. Ideal for filtration, security screens, machine guards, food processing, architectural panels and agricultural use in Noida, Greater Noida and Delhi NCR.',
-    materials: 'Stainless Steel 201, Stainless Steel 304',
-    sizes: '12mm to 150mm opening, 0.5mm to 5mm wire thickness, 3ft x 8ft / 4ft x 8ft sheets, rolls available',
-    grades: 'SS 201, SS 304',
-    applications: 'Filtration, Security Screens, Machine Guards, Food Processing, Architectural Panels, Agriculture',
-    price_from: '₹85/sqft',
-    meta_title: 'SS Welded Mesh Supplier in Noida | SS 201 & 304 Welded Wire Mesh',
-    meta_description: 'Buy SS welded mesh (grade 201 & 304) in Noida from Garg Industrial Mesh. Corrosion-resistant stainless steel welded wire mesh sheets & rolls. Get a free quote today.',
-    meta_keywords: 'ss welded mesh, stainless steel welded mesh, ss 304 welded mesh, ss 201 welded mesh, welded wire mesh noida, ss welded mesh supplier',
-    featured: 1
+    slug: 'mild-steel',
+    name: 'Mild Steel',
+    grades: 'MS / CRCA',
+    short_desc: 'Cost-effective punched mild steel for guards, filters and industrial panels.',
+    price_from: 'Ask for quote',
+    sort_order: 1,
+    best_for: 'Guards, industrial panels, filters, site safety where cost and strength matter more than corrosion resistance.',
+    standards: 'Commercial MS / CRCA sheet as agreed on RFQ. Pattern from our stock table or your drawing.',
+    temper_note: 'As-rolled / commercial temper unless you specify otherwise. Paint or powder-coat after punch if outdoor duty.',
+    detail: 'Mild steel is the everyday industrial perforated sheet — strong, weldable and economical. Expect surface rust outdoors unless painted, powder-coated or kept dry. Tell us thickness in mm, sheet size, blank edge and end use so we can confirm punchability (hole ≥ thickness).'
   },
   {
-    name: 'GI Welded Mesh',
-    category: 'Welded Mesh',
-    short_desc: 'Galvanised iron welded mesh for fencing, poultry and construction — rust-resistant and economical.',
-    description: 'GI Welded Mesh is made from hot-dip galvanised iron wire welded at each intersection, providing a strong, rust-resistant and economical mesh. Widely used for boundary fencing, poultry farms, construction reinforcement, gabions and safety partitions across Noida, Ghaziabad and Delhi NCR.',
-    materials: 'Galvanised Iron (GI) Wire',
-    sizes: '25mm to 100mm opening, 1.6mm to 4mm wire, 3ft/4ft/6ft width, 18m rolls',
-    grades: 'Standard GI',
-    applications: 'Boundary Fencing, Poultry Farms, Construction Reinforcement, Gabions, Safety Partitions',
-    price_from: '₹45/sqft',
-    meta_title: 'GI Welded Mesh Supplier in Noida | Galvanised Welded Wire Mesh',
-    meta_description: 'GI welded mesh in Noida from Garg Industrial Mesh. Rust-resistant galvanised iron welded wire mesh for fencing, poultry & construction. Best wholesale prices.',
-    meta_keywords: 'gi welded mesh, galvanised welded mesh, gi welded wire mesh, gi mesh noida, gi welded mesh supplier, poultry mesh',
-    featured: 1
+    slug: 'gi',
+    name: 'GI (Galvanised)',
+    grades: 'GI / Galvanized Iron',
+    short_desc: 'Zinc-coated perforated sheet for outdoor and corrosion-prone sites.',
+    price_from: 'Ask for quote',
+    sort_order: 2,
+    best_for: 'Outdoor guards, HVAC, fencing panels and sites where zinc coating buys corrosion life vs bare MS.',
+    standards: 'Galvanised steel sheet (GI) — coating mass / grade as agreed on RFQ.',
+    temper_note: 'Punching cuts through zinc at hole edges; cut edges may need touch-up paint if aesthetics or longevity matter.',
+    detail: 'GI perforated sheet is zinc-coated mild steel for outdoor and damp sites. Same hole patterns as MS. Confirm whether you need pre-galvanised blank punched, or MS punched then galvanised (process changes lead time and edge coverage).'
   },
   {
-    name: 'MS Welded Mesh',
-    category: 'Welded Mesh',
-    short_desc: 'Mild steel welded mesh for heavy-duty construction, slabs and precast applications.',
-    description: 'MS Welded Mesh is manufactured from mild steel wire welded into a precise grid, offering high tensile strength for structural use. Commonly used in RCC slabs, precast elements, road reinforcement, retaining walls and heavy industrial screening in Greater Noida and Delhi NCR.',
-    materials: 'Mild Steel (MS) Wire',
-    sizes: '50mm to 200mm opening, 2mm to 8mm wire, 4ft/6ft/8ft width',
-    grades: 'MS Standard',
-    applications: 'RCC Slabs, Precast Elements, Road Reinforcement, Retaining Walls, Industrial Screening',
-    price_from: '₹40/sqft',
-    meta_title: 'MS Welded Mesh Supplier in Noida | Mild Steel Welded Wire Mesh',
-    meta_description: 'MS welded mesh in Noida from Garg Industrial Mesh. High-strength mild steel welded wire mesh for construction, slabs & precast. Wholesale rates, fast delivery.',
-    meta_keywords: 'ms welded mesh, mild steel welded mesh, ms welded wire mesh, construction mesh noida, ms mesh supplier',
-    featured: 0
+    slug: 'stainless-steel',
+    name: 'Stainless Steel',
+    grades: 'SS 304, SS 316 (304L/316L on request)',
+    short_desc: 'Corrosion-resistant SS perforated sheet for food, pharma and facade work.',
+    price_from: 'Ask for quote',
+    sort_order: 3,
+    best_for: 'Food / pharma adjacent panels, washdown, coastal facades, long-life architectural screens.',
+    standards: 'SS 304 / 316 sheet (L grades on request). Pattern from stock table or drawing — not assumed from the alloy alone.',
+    temper_note: 'Soft / annealed blanks punch cleaner on dense patterns; harder tempers stay flatter on large spans. Name temper if critical.',
+    detail: 'Stainless holds up where MS/GI rust. 304 is the usual commercial default; 316 for chloride / coastal / chemical duty. Deburr and finish matter for hygiene — say so on the RFQ. Hole ≥ thickness still applies for conventional punching.'
   },
   {
-    name: 'MS Perforated Sheet',
-    category: 'Perforated Sheet',
-    short_desc: 'Mild steel perforated sheets in 3x8 and 4x8 ft sizes — for sieves, guards and acoustic panels.',
-    description: 'MS Perforated Sheet is a mild steel panel punched with precise round, square or slot holes. Supplied in 3x8 ft and 4x8 ft standard sizes, it is used for sieves, vibrating screens, machine guards, acoustic panels, ventilation and decorative facades. Strong, weldable and paintable for industrial and architectural use in Noida and Delhi NCR.',
-    materials: 'Mild Steel (MS) Sheet',
-    sizes: '3ft x 8ft, 4ft x 8ft; thickness 1mm to 6mm; round/square/slot holes',
-    grades: 'MS Standard',
-    applications: 'Sieves, Vibrating Screens, Machine Guards, Acoustic Panels, Ventilation, Decorative Facades',
-    price_from: '₹120/sqft',
-    meta_title: 'MS Perforated Sheet Supplier in Noida | 3x8 & 4x8 MS Perforated Sheets',
-    meta_description: 'MS perforated sheet in Noida from Garg Industrial Mesh. Mild steel perforated panels in 3x8 & 4x8 ft for sieves, guards & acoustic use. Custom hole patterns. Get quote.',
-    meta_keywords: 'ms perforated sheet, mild steel perforated sheet, perforated sheet noida, 4x8 perforated sheet, 3x8 perforated sheet, ms perforated sheet supplier, copper brass aluminium perforated sheet',
-    featured: 1
+    slug: 'aluminium',
+    name: 'Aluminium',
+    grades: '1100 / 3003 / 5052',
+    short_desc: 'Lightweight aluminium perforated sheet for cladding, grilles and speakers.',
+    price_from: 'Ask for quote',
+    sort_order: 4,
+    best_for: 'Lightweight cladding, speaker grilles, HVAC, interiors — where weight and corrosion resistance beat steel.',
+    standards: 'Common alloys 1100 / 3003 / 5052 (or as named on RFQ). Confirm temper (O / H14 / H32 etc.) if forming after punch.',
+    temper_note: 'Soft temper for curves; harder temper for flat panels that must not oil-can. Spec both alloy and temper.',
+    detail: 'Aluminium perforated sheet is light and corrosion-resistant outdoors with the right alloy. 5052 is a common structural/marine-leaning choice; 1100/3003 for softer decorative work. State alloy + temper + thickness in mm — not gauge alone.'
   },
   {
-    name: 'SS Perforated Sheet',
-    category: 'Perforated Sheet',
-    short_desc: 'Stainless steel perforated sheets in grade 202 and 304 — corrosion-resistant and decorative.',
-    description: 'SS Perforated Sheet is punched from stainless steel in grades 202 and 304, combining corrosion resistance with a clean architectural finish. Used for filtration, food-grade screens, facades, sun louvres, balustrade infill and acoustic panels in Noida, Greater Noida and Delhi NCR.',
-    materials: 'Stainless Steel 202, Stainless Steel 304',
-    sizes: '4ft x 8ft standard; thickness 0.5mm to 5mm; round/square/slot/decorative holes',
-    grades: 'SS 202, SS 304',
-    applications: 'Filtration, Food-Grade Screens, Facades, Sun Louvres, Balustrade Infill, Acoustic Panels',
-    price_from: '₹220/sqft',
-    meta_title: 'SS Perforated Sheet Supplier in Noida | SS 202 & 304 Perforated Sheets',
-    meta_description: 'SS perforated sheet (grade 202 & 304) in Noida from Garg Industrial Mesh. Corrosion-resistant stainless steel perforated panels for filtration & facades. Request a quote.',
-    meta_keywords: 'ss perforated sheet, stainless steel perforated sheet, ss 304 perforated sheet, ss 202 perforated sheet, perforated sheet noida, ss perforated sheet supplier',
-    featured: 1
+    slug: 'copper',
+    name: 'Copper',
+    grades: 'C11000 ETP (also C12200, C10200 on request)',
+    short_desc: 'Conductive copper perforated sheet for EMI vents, cladding and filters.',
+    price_from: 'Ask for quote',
+    sort_order: 5,
+    best_for: 'EMI/RFI vent panels, architectural cladding, filters, HVAC where conductivity or copper look matters.',
+    standards: 'ASTM B152 / B152M for the blank copper sheet. Pattern geometry is separate — from our stock table or your CAD.',
+    temper_note: 'Soft / O60 wraps and forms; half-hard / hard holds flatter panels. ASTM B601 temper codes preferred (O60, H01, H02, H04…).',
+    detail: 'Do not order “just copper” — name the UNS grade. C11000 (ETP) is the usual high-conductivity commercial default (~100% IACS annealed). C12200 (DHP) when brazing/welding is heavy. C10200/C10100 when oxygen-free is required (write the number, not only “OFHC”). Mill certs cover the blank; hole geometry is our punch work.'
   },
   {
-    name: 'GI Perforated Sheet',
-    category: 'Perforated Sheet',
-    short_desc: 'Galvanised perforated sheets — rust-resistant and economical for outdoor and industrial use.',
-    description: 'GI Perforated Sheet is a hot-dip galvanised mild steel panel punched with round or square holes, offering rust resistance at an economical price. Ideal for outdoor sieves, ventilation grilles, walkway gratings, agricultural screens and noise barriers across Noida, Ghaziabad and Delhi NCR.',
-    materials: 'Galvanised Iron (GI) Sheet',
-    sizes: '4ft x 8ft; thickness 1mm to 4mm; round/square holes',
-    grades: 'Standard GI',
-    applications: 'Outdoor Sieves, Ventilation Grilles, Walkway Gratings, Agricultural Screens, Noise Barriers',
-    price_from: '₹160/sqft',
-    meta_title: 'GI Perforated Sheet Supplier in Noida | Galvanised Perforated Sheet',
-    meta_description: 'GI perforated sheet in Noida from Garg Industrial Mesh. Rust-resistant galvanised perforated panels for outdoor & industrial use. Best wholesale prices. Get quote.',
-    meta_keywords: 'gi perforated sheet, galvanised perforated sheet, gi perforated panel, perforated sheet noida, gi perforated sheet supplier',
-    featured: 0
-  },
-  {
-    name: 'Copper Perforated Sheet',
-    category: 'Perforated Sheet',
-    short_desc: 'Copper perforated sheets with round or hexagonal holes — facades, EMI shielding and heritage work.',
-    description: 'Copper Perforated Sheet is punched from pure copper plate with precise round, hexagonal or decorative holes. It develops a natural patina over time and is valued for architectural cladding, temple and heritage work, EMI/RFI shielding, decorative screens, ventilation panels and premium interiors. Supplied cut-to-size across Noida, Greater Noida and Delhi NCR by Garg Industrial Mesh.',
-    materials: 'Copper Sheet',
-    sizes: 'Cut to size; thickness 0.5mm to 3mm; round/hexagonal/square/decorative holes',
-    grades: 'Electrolytic Tough Pitch (ETP) Copper, Commercial Copper',
-    applications: 'Architectural Facades, Heritage & Temple Work, EMI Shielding, Decorative Screens, Ventilation Panels, Premium Interiors',
-    price_from: '₹450/sqft',
-    meta_title: 'Copper Perforated Sheet Supplier in Noida | Hexagonal & Round Copper Perforated Metal',
-    meta_description: 'Copper perforated sheet in Noida — round & hexagonal holes for facades, heritage work, EMI shielding & ventilation. Cut to size. Garg Industrial Mesh. Call 9910238277.',
-    meta_keywords: 'copper perforated sheet, hexagonal copper perforated sheet, copper perforated sheet noida, copper perforated metal, decorative copper sheet delhi ncr',
-    featured: 1
-  },
-  {
-    name: 'Brass Perforated Sheet',
-    category: 'Perforated Sheet',
-    short_desc: 'Brass perforated sheets for ornamental screens, nameplates and decorative architectural work.',
-    description: 'Brass Perforated Sheet is punched from brass alloy with round, square or ornamental hole patterns. It offers a warm golden finish for decorative screens, nameplates, furniture inlays, acoustic panels and architectural detailing. Corrosion-resistant for indoor and semi-outdoor use. Cut to size and supplied across Noida and Delhi NCR by Garg Industrial Mesh.',
-    materials: 'Brass Sheet',
-    sizes: 'Cut to size; thickness 0.5mm to 3mm; round/square/ornamental holes',
-    grades: 'Cartridge Brass, Yellow Brass, Commercial Brass',
-    applications: 'Ornamental Screens, Nameplates, Furniture Inlays, Acoustic Panels, Architectural Detailing',
-    price_from: '₹400/sqft',
-    meta_title: 'Brass Perforated Sheet Supplier in Noida | Decorative Brass Perforated Metal',
-    meta_description: 'Brass perforated sheet in Noida from Garg Industrial Mesh. Decorative brass perforated metal for screens, nameplates & architecture. Cut to size. Call 9910238277.',
-    meta_keywords: 'brass perforated sheet, brass perforated sheet noida, brass perforated metal, decorative brass sheet, brass perforated panel supplier delhi ncr',
-    featured: 1
-  },
-  {
-    name: 'Aluminium Perforated Sheet',
-    category: 'Perforated Sheet',
-    short_desc: 'Lightweight aluminium perforated sheets for facades, ceilings, HVAC and acoustic panels.',
-    description: 'Aluminium Perforated Sheet is a lightweight, corrosion-resistant panel punched with round, square or slot holes. Ideal for building facades, false ceilings, HVAC grilles, acoustic panels, sunscreens and machine guards where weight savings matter. Easy to cut, powder-coat and install. Supplied in standard and cut-to-size sheets across Noida, Greater Noida and Delhi NCR by Garg Industrial Mesh.',
-    materials: 'Aluminium Sheet',
-    sizes: '4ft x 8ft standard; cut to size; thickness 0.5mm to 3mm; round/square/slot holes',
-    grades: 'AA 1100, AA 3003, AA 5052',
-    applications: 'Facades, False Ceilings, HVAC Grilles, Acoustic Panels, Sunscreens, Lightweight Guards',
-    price_from: '₹180/sqft',
-    meta_title: 'Aluminium Perforated Sheet Supplier in Noida | Aluminum Perforated Metal',
-    meta_description: 'Aluminium perforated sheet in Noida from Garg Industrial Mesh. Lightweight aluminum perforated metal for facades, ceilings & HVAC. Cut to size. Call 9910238277.',
-    meta_keywords: 'aluminium perforated sheet, aluminum perforated sheet, aluminium perforated sheet noida, aluminium perforated metal, aluminum perforated panel supplier delhi ncr',
-    featured: 1
-  },
-  {
-    name: 'MS Expanded Mesh',
-    category: 'Expanded Mesh',
-    short_desc: 'Mild steel expanded mesh (diamond / barfi jali) for walkways, fencing, guards and plastering.',
-    description: 'MS Expanded Mesh is made by slitting and stretching mild steel sheet into a diamond (barfi jali) pattern — no welds, high strength-to-weight. Used for walkway gratings, machine guards, fencing infill, plastering lath, catwalks, filters and security screens. Strong, weldable and economical for construction and industrial projects across Noida and Delhi NCR. Also called expanded metal sheet or MS jali.',
-    materials: 'Mild Steel (MS) Sheet',
-    sizes: 'Standard sheets & cut to size; fine to heavy SWD/LWD openings; raised or flattened',
-    grades: 'MS Standard, Flattened / Raised',
-    applications: 'Walkway Gratings, Machine Guards, Fencing Infill, Plastering Lath, Catwalks, Security Screens, Industrial Filters',
-    price_from: '₹95/sqft',
-    meta_title: 'MS Expanded Mesh Supplier in Noida | Mild Steel Expanded Metal / Barfi Jali',
-    meta_description: 'MS expanded mesh (barfi jali) in Noida for walkways, guards, fencing & plastering. Diamond expanded metal sheet cut to size. Garg Industrial Mesh. Call 9910238277.',
-    meta_keywords: 'ms expanded mesh, mild steel expanded mesh, expanded metal sheet noida, barfi jali, ms expanded metal, expanded mesh supplier delhi ncr',
-    featured: 1
-  },
-  {
-    name: 'GI Expanded Mesh',
-    category: 'Expanded Mesh',
-    short_desc: 'Galvanised expanded mesh for outdoor walkways, fencing, ventilation and anti-slip platforms.',
-    description: 'GI Expanded Mesh is galvanised expanded metal with a zinc coating for rust resistance outdoors. Diamond openings give grip and airflow for walkways, stair treads, fencing, ventilation panels, compound walls and agricultural screens. Economical outdoor alternative to stainless expanded mesh across Noida, Ghaziabad and Delhi NCR.',
-    materials: 'Galvanised Iron (GI) Sheet',
-    sizes: 'Sheets & cut to size; raised or flattened diamond openings',
-    grades: 'Standard GI Expanded / Flattened',
-    applications: 'Outdoor Walkways, Stair Treads, Boundary Fencing, Ventilation Panels, Compound Walls, Agricultural Screens',
-    price_from: '₹120/sqft',
-    meta_title: 'GI Expanded Mesh Supplier in Noida | Galvanised Expanded Metal Sheet',
-    meta_description: 'GI expanded mesh in Noida — rust-resistant galvanised expanded metal for outdoor walkways, fencing & ventilation. Cut to size. Call 9910238277.',
-    meta_keywords: 'gi expanded mesh, galvanised expanded mesh, gi expanded metal sheet, expanded mesh noida, gi barfi jali',
-    featured: 0
-  },
-  {
-    name: 'SS Expanded Mesh',
-    category: 'Expanded Mesh',
-    short_desc: 'Stainless steel expanded mesh for facades, food plants, filters and premium architectural screens.',
-    description: 'SS Expanded Mesh is slit-and-stretched stainless steel (typically SS 304/202) forming a durable diamond pattern. Used for building facades, balustrade infill, food-grade platforms, chemical plant flooring, machine guards, filters and decorative screens where corrosion resistance and a clean finish matter. Supplied across Noida and Delhi NCR by Garg Industrial Mesh.',
-    materials: 'Stainless Steel 202, Stainless Steel 304',
-    sizes: 'Sheets & cut to size; fine to heavy diamond openings; raised or flattened',
-    grades: 'SS 202, SS 304',
-    applications: 'Facades, Balustrade Infill, Food-Grade Platforms, Chemical Plant Flooring, Machine Guards, Filters, Decorative Screens',
-    price_from: '₹280/sqft',
-    meta_title: 'SS Expanded Mesh Supplier in Noida | SS 304 Expanded Metal Sheet',
-    meta_description: 'SS expanded mesh (SS 304/202) in Noida for facades, food plants, filters & architectural screens. Corrosion-resistant expanded metal. Call 9910238277.',
-    meta_keywords: 'ss expanded mesh, stainless steel expanded mesh, ss 304 expanded metal, expanded mesh noida, ss expanded metal sheet',
-    featured: 1
-  },
-  {
-    name: 'Aluminium Expanded Mesh',
-    category: 'Expanded Mesh',
-    short_desc: 'Lightweight aluminium expanded mesh for ceilings, facades, sunscreens and HVAC grilles.',
-    description: 'Aluminium Expanded Mesh is a light, corrosion-resistant diamond mesh used where weight savings matter — false ceilings, facade cladding, sunscreens, HVAC return grilles, speaker grilles and decorative partitions. Easy to cut, powder-coat and install. Ideal for architects and fit-outs across Noida, Greater Noida and Delhi NCR.',
-    materials: 'Aluminium Sheet',
-    sizes: 'Sheets & cut to size; fine to medium diamond openings',
-    grades: 'AA 1100, AA 3003, AA 5052',
-    applications: 'False Ceilings, Facade Cladding, Sunscreens, HVAC Grilles, Speaker Grilles, Decorative Partitions',
-    price_from: '₹160/sqft',
-    meta_title: 'Aluminium Expanded Mesh Supplier in Noida | Aluminum Expanded Metal',
-    meta_description: 'Aluminium expanded mesh in Noida for ceilings, facades, sunscreens & HVAC grilles. Lightweight expanded metal cut to size. Call 9910238277.',
-    meta_keywords: 'aluminium expanded mesh, aluminum expanded mesh, aluminium expanded metal noida, aluminium barfi jali, expanded aluminium sheet',
-    featured: 1
-  },
-  {
-    name: 'Copper Expanded Mesh',
-    category: 'Expanded Mesh',
-    short_desc: 'Copper expanded mesh for decorative facades, heritage screens, EMI shielding and premium interiors.',
-    description: 'Copper Expanded Mesh is slit-and-stretched copper sheet forming a continuous diamond pattern (no welds). Used for decorative architectural facades, heritage and temple screens, EMI/RFI shielding cages, luxury interior partitions, radiator grilles and artistic cladding. Develops a natural patina outdoors. Cut-to-size and roll supply available from Garg Industrial Mesh, Sector 9 Noida.',
-    materials: 'Copper Sheet',
-    sizes: 'Sheets, rolls & cut to size; fine to medium diamond openings',
-    grades: 'ETP Copper, Commercial Copper',
-    applications: 'Decorative Facades, Heritage Screens, EMI/RFI Shielding, Luxury Interiors, Radiator Grilles, Artistic Cladding',
-    price_from: '₹480/sqft',
-    meta_title: 'Copper Expanded Mesh Supplier in Noida | Decorative Copper Expanded Metal',
-    meta_description: 'Copper expanded mesh in Noida for decorative facades, heritage screens & EMI shielding. Diamond copper expanded metal cut to size. Call 9910238277.',
-    meta_keywords: 'copper expanded mesh, copper expanded metal, copper expanded mesh noida, decorative copper mesh, copper diamond mesh delhi ncr',
-    featured: 1
-  },
-  {
-    name: 'Brass Expanded Mesh',
-    category: 'Expanded Mesh',
-    short_desc: 'Brass expanded mesh for ornamental screens, nameplates, furniture and architectural detailing.',
-    description: 'Brass Expanded Mesh is expanded brass sheet with a warm golden diamond pattern. Used for ornamental screens, furniture inlays, nameplate backing, acoustic/decorative panels, boutique storefronts and premium architectural detailing. Corrosion-resistant for indoor and semi-outdoor use. Supplied cut-to-size across Noida and Delhi NCR by Garg Industrial Mesh.',
-    materials: 'Brass Sheet',
-    sizes: 'Sheets & cut to size; fine to medium diamond openings',
-    grades: 'Cartridge Brass, Yellow Brass, Commercial Brass',
-    applications: 'Ornamental Screens, Furniture Inlays, Nameplate Backing, Decorative Panels, Boutique Storefronts, Architectural Detailing',
-    price_from: '₹420/sqft',
-    meta_title: 'Brass Expanded Mesh Supplier in Noida | Decorative Brass Expanded Metal',
-    meta_description: 'Brass expanded mesh in Noida for ornamental screens, furniture & architectural detailing. Golden diamond brass expanded metal. Call 9910238277.',
-    meta_keywords: 'brass expanded mesh, brass expanded metal, brass expanded mesh noida, decorative brass mesh, brass diamond mesh delhi ncr',
-    featured: 1
-  },
-  {
-    name: 'SS Wire Mesh',
-    category: 'Wire Mesh',
-    short_desc: 'Woven stainless steel wire mesh in grade 202 and 304 — fine filtration and screening.',
-    description: 'SS Wire Mesh is woven from stainless steel wire in grades 202 and 304, available in fine to coarse meshes. Used for liquid and gas filtration, sieving, test sieves, security screens, insect screening and architectural mesh in Noida, Greater Noida and Delhi NCR. High tensile strength and excellent corrosion resistance.',
-    materials: 'Stainless Steel 202, Stainless Steel 304',
-    sizes: '10 mesh to 500 mesh; wire 0.025mm to 3mm; rolls and cut pieces',
-    grades: 'SS 202, SS 304',
-    applications: 'Liquid & Gas Filtration, Sieving, Test Sieves, Security Screens, Insect Screening, Architectural Mesh',
-    price_from: '₹95/sqft',
-    meta_title: 'SS Wire Mesh Supplier in Noida | SS 202 & 304 Woven Wire Mesh',
-    meta_description: 'SS wire mesh (grade 202 & 304) in Noida from Garg Industrial Mesh. Woven stainless steel wire mesh for filtration, sieving & screening. Fine to coarse meshes. Get quote.',
-    meta_keywords: 'ss wire mesh, stainless steel wire mesh, ss 304 wire mesh, ss 202 wire mesh, wire mesh noida, ss wire mesh supplier, woven wire mesh',
-    featured: 1
-  },
-  {
-    name: 'PVC Mesh',
-    category: 'Fencing Mesh',
-    short_desc: 'PVC coated welded mesh in 4ft, 4.5ft, 5ft and 6.5ft heights — durable and weatherproof.',
-    description: 'PVC Mesh is a welded wire mesh coated with a UV-stabilised PVC layer, offering excellent weather resistance and a clean look. Available in 4ft, 4.5ft, 5ft and 6.5ft heights, it is widely used for boundary fencing, garden fencing, pet enclosures, sports courts and farm partitions in Noida and Delhi NCR.',
-    materials: 'GI Wire with PVC Coating',
-    sizes: '4ft, 4.5ft, 5ft, 6.5ft heights; opening 25mm to 75mm; 18m rolls',
-    grades: 'PVC Coated Standard',
-    applications: 'Boundary Fencing, Garden Fencing, Pet Enclosures, Sports Courts, Farm Partitions',
-    price_from: '₹55/sqft',
-    meta_title: 'PVC Mesh Supplier in Noida | PVC Coated Welded Wire Mesh 4ft-6.5ft',
-    meta_description: 'PVC mesh in Noida from Garg Industrial Mesh. PVC coated welded wire mesh in 4ft, 4.5ft, 5ft & 6.5ft for fencing & enclosures. Weatherproof, long-lasting. Get quote.',
-    meta_keywords: 'pvc mesh, pvc coated mesh, pvc welded mesh, pvc mesh noida, pvc mesh 4ft, pvc mesh supplier, pvc fencing mesh',
-    featured: 1
-  },
-  {
-    name: 'Aluminium Door Mesh',
-    category: 'Door & Window Mesh',
-    short_desc: 'Aluminium door mesh in 2ft to 5ft widths — lightweight insect and ventilation mesh for doors.',
-    description: 'Aluminium Door Mesh is a lightweight, corrosion-resistant woven mesh designed for door and window frames. Available in 2ft, 2.5ft, 3ft, 3.5ft, 4ft and 5ft widths, it keeps insects out while allowing airflow. Ideal for homes, kitchens, hospitals and commercial spaces in Noida, Greater Noida and Delhi NCR.',
-    materials: 'Aluminium Wire',
-    sizes: '2ft, 2.5ft, 3ft, 3.5ft, 4ft, 5ft widths; standard mesh opening; rolls & cut pieces',
-    grades: 'Aluminium Standard',
-    applications: 'Door Screens, Window Screens, Kitchen Ventilation, Hospitals, Commercial Spaces',
-    price_from: '₹70/sqft',
-    meta_title: 'Aluminium Door Mesh Supplier in Noida | Aluminium Insect Mesh 2ft-5ft',
-    meta_description: 'Aluminium door mesh in Noida from Garg Industrial Mesh. Lightweight aluminium insect mesh in 2ft to 5ft widths for doors & windows. Corrosion-resistant. Get quote.',
-    meta_keywords: 'aluminium door mesh, aluminium mesh, aluminium insect mesh, door mesh noida, aluminium door mesh supplier, window mesh',
-    featured: 1
-  },
-  {
-    name: 'Chain Link Fence',
-    category: 'Fencing Mesh',
-    short_desc: 'Chain link fencing in 3.5ft, 4.5ft and 5ft heights — strong, economical boundary security.',
-    description: 'Chain Link Fence is a woven diamond-pattern fence made from GI or PVC-coated wire. Available in 3.5ft, 4.5ft and 5ft heights, it provides strong, see-through boundary security for plots, factories, farms, sports fields and highways in Noida, Ghaziabad and Delhi NCR. Easy to install and economical per running foot.',
-    materials: 'GI Wire / PVC Coated Wire',
-    sizes: '3.5ft, 4.5ft, 5ft heights; mesh 25mm to 75mm; wire 1.6mm to 4mm; rolls',
-    grades: 'GI / PVC Coated',
-    applications: 'Boundary Security, Plots, Factories, Farms, Sports Fields, Highways',
-    price_from: '₹50/sqft',
-    meta_title: 'Chain Link Fence Supplier in Noida | 3.5ft, 4.5ft & 5ft Chain Link Fencing',
-    meta_description: 'Chain link fence in Noida from Garg Industrial Mesh. GI & PVC coated chain link fencing in 3.5ft, 4.5ft & 5ft for boundary security. Best prices per running foot. Get quote.',
-    meta_keywords: 'chain link fence, chain link fencing, chain link fence noida, chain link fence supplier, gi chain link fence, pvc chain link fence',
-    featured: 1
-  },
-  {
-    name: 'Bird Mesh',
-    category: 'Protection Mesh',
-    short_desc: 'Bird mesh for balconies, windows and open spaces — keeps birds out without blocking the view.',
-    description: 'Bird Mesh is a fine, UV-stabilised nylon or PVC-coated mesh installed on balconies, windows, ducts and open spaces to prevent birds from entering without obstructing light or ventilation. Lightweight, durable and discreet — popular in apartments and offices across Noida, Greater Noida and Delhi NCR.',
-    materials: 'Nylon / PVC Coated Wire',
-    sizes: 'Standard rolls; opening 12mm to 25mm; cut to size',
-    grades: 'Nylon / PVC Coated',
-    applications: 'Balconies, Windows, Ducts, Open Spaces, Apartments, Offices',
-    price_from: '₹30/sqft',
-    meta_title: 'Bird Mesh Supplier in Noida | Bird Protection Mesh for Balconies & Windows',
-    meta_description: 'Bird mesh in Noida from Garg Industrial Mesh. Fine nylon & PVC bird protection mesh for balconies, windows & ducts. Keeps birds out, keeps view open. Get quote.',
-    meta_keywords: 'bird mesh, bird protection mesh, bird mesh noida, balcony bird mesh, bird mesh supplier, anti bird mesh',
-    featured: 0
-  },
-  {
-    name: 'Bird Spikes',
-    category: 'Protection Mesh',
-    short_desc: 'Bird spikes in stainless steel and plastic — humane bird control for ledges and rooftops.',
-    description: 'Bird Spikes are pointed strips fixed to ledges, parapets, rooftops and AC units to humanely prevent birds from landing and nesting. Available in stainless steel (long-lasting, weatherproof) and plastic (economical) variants. Widely used for residential and commercial buildings in Noida and Delhi NCR.',
-    materials: 'Stainless Steel / Plastic',
-    sizes: 'Standard strips; SS and plastic variants; per foot',
-    grades: 'SS, Plastic',
-    applications: 'Ledges, Parapets, Rooftops, AC Units, Signage, Residential & Commercial Buildings',
-    price_from: '₹40/ft',
-    meta_title: 'Bird Spikes Supplier in Noida | SS & Plastic Bird Control Spikes',
-    meta_description: 'Bird spikes in Noida from Garg Industrial Mesh. Stainless steel & plastic bird control spikes for ledges, rooftops & AC units. Humane, durable. Best prices. Get quote.',
-    meta_keywords: 'bird spikes, bird control spikes, ss bird spikes, plastic bird spikes, bird spikes noida, bird spikes supplier, anti bird spikes',
-    featured: 1
-  },
-  {
-    name: 'Monkey Spikes',
-    category: 'Protection Mesh',
-    short_desc: 'Monkey spikes to deter monkeys from ledges, walls and rooftops — humane and effective.',
-    description: 'Monkey Spikes are robust pointed strips installed on ledges, boundary walls, rooftops and AC platforms to humanely deter monkeys from climbing and sitting. Made from durable metal, they protect property and people in monkey-prone areas of Noida, Greater Noida and Delhi NCR without harming the animals.',
-    materials: 'Galvanised / Stainless Steel',
-    sizes: 'Standard strips; per foot; custom lengths',
-    grades: 'GI / SS',
-    applications: 'Ledges, Boundary Walls, Rooftops, AC Platforms, Residential & Commercial Buildings',
-    price_from: '₹55/ft',
-    meta_title: 'Monkey Spikes Supplier in Noida | Anti-Monkey Spikes for Walls & Rooftops',
-    meta_description: 'Monkey spikes in Noida from Garg Industrial Mesh. Durable anti-monkey spikes for ledges, walls & rooftops. Humane, effective monkey control. Best prices. Get quote.',
-    meta_keywords: 'monkey spikes, anti monkey spikes, monkey spikes noida, monkey control spikes, monkey spikes supplier, monkey protection spikes',
-    featured: 0
-  },
-  {
-    name: 'Construction Net',
-    category: 'Safety Net',
-    short_desc: 'Construction safety netting for scaffolding, debris and fall protection on building sites.',
-    description: 'Construction Net is a high-strength HDPE safety net used on scaffolding, building facades and open edges to catch debris and protect workers from falls. UV-stabilised for outdoor durability, it meets site safety requirements for high-rise and infrastructure projects across Noida, Greater Noida and Delhi NCR.',
-    materials: 'HDPE (UV Stabilised)',
-    sizes: 'Standard rolls; mesh 25mm to 100mm; cut to size',
-    grades: 'HDPE Standard',
-    applications: 'Scaffolding, Building Facades, Debris Protection, Fall Protection, Infrastructure Sites',
-    price_from: '₹35/sqft',
-    meta_title: 'Construction Net Supplier in Noida | Safety & Debris Netting for Sites',
-    meta_description: 'Construction net in Noida from Garg Industrial Mesh. HDPE safety & debris netting for scaffolding and building sites. UV-stabilised, site-safe. Best prices. Get quote.',
-    meta_keywords: 'construction net, construction safety net, debris net, scaffolding net, construction net noida, construction net supplier, safety netting',
-    featured: 0
+    slug: 'brass',
+    name: 'Brass',
+    grades: 'C26000 cartridge (also C27000, C28000, C23000)',
+    short_desc: 'Decorative brass perforated sheet for screens, elevators and architectural work.',
+    price_from: 'Ask for quote',
+    sort_order: 6,
+    best_for: 'Elevator cladding, decorative screens, architectural interiors, premium visual panels.',
+    standards: 'ASTM B36 family alloys common for brass sheet (e.g. C26000). Confirm alloy + temper on RFQ.',
+    temper_note: 'Soft for formed wraps; harder for flat framed screens. Lacquer / clear coat if you want to slow tarnish.',
+    detail: 'Brass perforated sheet is chosen for colour and finish as much as strength. C26000 (cartridge) is a common decorative default; other alloys on request. Fingerprints and tarnish show — state finish expectations (mill, lacquered, polished).'
   }
 ];
 
-module.exports = { products, slugify, buildFaq };
+/** Buying-guide content distilled from PERFORATED SHEET HTML microsites (customer + technical). */
+const GUIDE_SECTIONS = [
+  {
+    id: 'how-to-order',
+    title: 'How to order — RFQ checklist',
+    body: 'Send a complete RFQ once. Missing grade, thickness, size, hole/pitch/orientation, blank edge, qty or end use stalls every quote.',
+    bullets: [
+      'Material + grade (e.g. MS, GI, SS 304/316, Al 5052, Cu C11000, Brass C26000)',
+      'Temper if it matters (soft / half-hard / hard — or ASTM temper code)',
+      'Thickness in millimetres (not gauge alone)',
+      'Finished sheet size (width × length; note long-edge / feed if it matters)',
+      'Pattern: stock code (e.g. Perforated 02) or hole + pitch + orientation',
+      'Open area target on perforated field — or “confirm from pattern”',
+      'Blank edge 0–100 mm custom (equal or per side); wider on request',
+      'Finish, quantity, packing, and one-sentence end use',
+      'Attach PDF/DWG for custom patterns, cutouts or unequal margins'
+    ]
+  },
+  {
+    id: 'thickness',
+    title: 'Thickness guide',
+    body: 'Hard shop rule for conventional punching: hole size (minimum opening) should be ≥ sheet thickness. Soft metals can sometimes go tighter; hard temper and dense patterns push you back to 1:1 or above. Below 1:1 is a process discussion — not a silent RFQ assumption.',
+    bullets: [
+      'Thinner stock (~0.3–1.0 mm): grilles, speaker faces, light screens, EMI vents',
+      'Mid band (~0.8–2.0 mm): facade screens, HVAC, framed panels',
+      'Heavier (~1.5–3.0 mm+): guards, load-bearing, abuse-prone sites',
+      'Your span, load and temper decide the number — these bands are guidance only'
+    ]
+  },
+  {
+    id: 'blank-edge',
+    title: 'Blank edge / unperforated border',
+    body: 'The blank edge is the solid strip where you clamp, weld, hem, gasket or hide fasteners. Pattern stops inside this margin. Finished cut size should include the blank edge — say so if your drawing shows overall size vs perforated field only.',
+    bullets: [
+      '0–100 mm customised on our floor (equal all sides or unequal per drawing)',
+      'Above 100 mm available on request — confirm sheet size and press setup',
+      'Small margins can leave incomplete (breakout) holes at the trim — say if that is OK',
+      'Unequal top/bottom/left/right needs a sketch'
+    ]
+  },
+  {
+    id: 'patterns',
+    title: 'Hole, pitch, bridge & open area',
+    body: 'Hole size is diameter (round), side (square) or across-flats for hex (say AF vs AP). Pitch is centre-to-centre. Bridge (bar) is metal left between holes ≈ pitch − hole. Open area (OA%) is % hole inside the perforated field only — blank edges excluded.',
+    bullets: [
+      'Round 60° staggered — denser pack, higher OA for same hole/pitch, common airflow default',
+      'Round 90° / Square 90° — orthogonal rows, easier visual alignment with frames',
+      'Hex 60° — honeycomb look, high open area options in our stock table',
+      'OA% formulas (field only): Round 60° ≈ (D² × 90.69) / P²; Round 90° ≈ (D² × 78.54) / P²',
+      'Custom drawings welcome when thickness and hole size allow tooling'
+    ]
+  },
+  {
+    id: 'temper',
+    title: 'Temper (soft vs hard)',
+    body: 'Grade is chemistry. Temper is how hard and springy the blank is. Soft wraps a radius; hard holds a flat panel better and springs back more. Spec both — or we have to guess.',
+    bullets: [
+      'Soft / annealed — forming, curved wraps, easier punch on dense patterns',
+      'Half-hard — common sweet spot for flat framed screens',
+      'Hard / spring — self-supporting lids and gasket seats; confirm hole vs thickness',
+      'Copper buyers: ASTM B601 codes (O60, H01, H02, H04…) preferred over trade words alone',
+      'Perforated mechanical properties ≠ blank mill cert — do not assume they match'
+    ]
+  },
+  {
+    id: 'applications',
+    title: 'Where this pattern is used',
+    body: 'Same press, different jobs. One sentence of end use steers grade, temper, thickness, blank edge, burr side and what “good enough” means.',
+    bullets: [
+      'Machine guards & site safety — strength, visibility, durable edges',
+      'HVAC grilles & ventilation — OA% drives pressure drop; state field vs full-panel OA',
+      'Facade / decorative screens — visual density + flatness + margin for frame',
+      'Speaker grilles — finish and OA% for the cabinet',
+      'Filtration / strainers — hole size leads; pitch and thickness support it',
+      'EMI / RFI vent panels (copper) — grade + continuous blank land for gaskets matter as much as holes',
+      'Elevator / architectural brass — colour, lacquer and fingerprint expectations'
+    ]
+  },
+  {
+    id: 'standards',
+    title: 'Standards & what mill certs cover',
+    body: 'Base-metal standards (e.g. ASTM B152 copper, ASTM B36 brass, commercial MS/GI/SS sheet) cover the unperforated blank — chemistry, temper and mechanical limits. Hole pattern is defined by our stock table or your drawing. Mill certificates typically cover the blank, not finished hole geometry.',
+    bullets: [
+      'Name the alloy / UNS / grade on the PO — not only the colour of the metal',
+      'Confirm pattern code or hole–pitch–angle separately from the metal standard',
+      'Shielding, acoustic NRC or hygiene claims need your system data — we supply the geometry you specify'
+    ]
+  },
+  {
+    id: 'glossary',
+    title: 'Glossary',
+    body: 'Shared language for purchasing, engineering and the press floor.',
+    bullets: [
+      'Hole (d / w) — opening size; for hex state across-flats (AF) or across-points (AP)',
+      'Pitch (t / p) — centre-to-centre spacing',
+      'Bridge / bar (c) — metal between holes; typically c = pitch − hole',
+      'Open area (OA%) — % open in the perforated field (blank edges out)',
+      'Perforated field — zone that contains holes, inside the margins',
+      'Orientation 60° — staggered rows; 90° — straight / square pitch',
+      'Blank edge / margin — unperforated border for clamp, weld, gasket',
+      'Temper — soft vs hard mechanical condition of the blank'
+    ]
+  }
+];
+
+const { allExtraMaterials } = require('./catalog');
+
+function materialBySlug(slug) {
+  const fromPerf = MATERIALS.find((m) => m.slug === slug);
+  if (fromPerf) return fromPerf;
+  return allExtraMaterials()[slug] || null;
+}
+
+/** Computed technicals for a design row (DB or seed shape). */
+function buildDesignTech(design, category) {
+  const catSlug = (category && category.slug) || design.category_slug || '';
+  const hole = Number(design.hole_mm);
+  const pitch = Number(design.pitch_mm);
+  const angle = Number(design.angle_deg);
+  const oa = Number(design.open_area_pct);
+  const shape = design.hole_shape || '';
+
+  if (catSlug === 'ss-welded-mesh') {
+    const openB = Number(design.angle_deg);
+    const openingDd = hole
+      ? (openB && openB !== hole ? `${hole} × ${openB} mm` : `${hole} × ${hole} mm`)
+      : 'See SKU';
+    return {
+      kind: 'welded',
+      family: shape || 'Welded',
+      holeLabel: hole ? `${hole} mm` : 'See SKU',
+      bridge_mm: pitch || null,
+      orientation: 'Welded intersections — confirm clear opening vs pitch on RFQ.',
+      maxThicknessTip: 'State roll (e.g. 4′×50′) or panel size, grade (304/201), and wire mm/SWG.',
+      oa_note: design.short_desc || '',
+      plain: design.description || design.short_desc || design.name,
+      rows: [
+        { dt: 'Opening', dd: openingDd },
+        { dt: 'Wire', dd: pitch ? `${pitch} mm` : 'See SKU / SWG' },
+        { dt: 'Form', dd: 'Rolls & panels' },
+        { dt: 'Grades', dd: 'SS 304 / SS 201' },
+        { dt: 'SKU', dd: design.short_desc || design.name }
+      ]
+    };
+  }
+  if (catSlug === 'expanded-mesh') {
+    const swd = hole;
+    const lwd = pitch;
+    const strand = oa;
+    const hasSpecs = swd && lwd && strand;
+    return {
+      kind: 'expanded',
+      family: 'Expanded diamond',
+      holeLabel: hasSpecs ? `SWD ${swd} mm` : design.name,
+      bridge_mm: strand || null,
+      orientation: 'SWD = short way of diamond; LWD = long way; strand = metal strand width.',
+      maxThicknessTip: 'State thickness, sheet size, material (MS / aluminium / SS) and quantity on the RFQ.',
+      oa_note: design.short_desc || '',
+      plain: design.description || design.short_desc || design.name,
+      rows: hasSpecs
+        ? [
+          { dt: 'SWD', dd: `${swd} mm` },
+          { dt: 'LWD', dd: `${lwd} mm` },
+          { dt: 'Strand width', dd: `${strand} mm` },
+          { dt: 'Pattern', dd: 'Expanded diamond' }
+        ]
+        : [
+          { dt: 'SWD / LWD / Strand', dd: 'Confirm on RFQ' },
+          { dt: 'Pattern', dd: 'Expanded diamond' }
+        ]
+    };
+  }
+  if (catSlug === 'chain-link-mesh') {
+    return {
+      kind: 'chain-link',
+      family: 'Diamond',
+      holeLabel: hole ? `${hole} mm clear` : 'Box opening',
+      bridge_mm: null,
+      orientation: 'Box = clear inside opening of the diamond, not centre-to-centre.',
+      maxThicknessTip: 'Heights 3–10 ft · wire 2.5 / 3 / 4 mm · 50 ft rolls — state all on RFQ.',
+      oa_note: design.short_desc || '',
+      plain: design.description || design.short_desc,
+      rows: [
+        { dt: 'Box (clear)', dd: hole ? `${hole} mm` : '—' },
+        { dt: 'Heights', dd: '3–10 ft' },
+        { dt: 'Wire', dd: '2.5 / 3 / 4 mm' },
+        { dt: 'Roll', dd: '50 ft standard' }
+      ]
+    };
+  }
+  if (catSlug === 'door-machhar-jali') {
+    const meshFromShort = (design.short_desc || '').match(/^(\d+×\d+)/);
+    const meshLabel = meshFromShort ? meshFromShort[1] : design.name;
+    return {
+      kind: 'machhar',
+      family: 'Woven mesh',
+      holeLabel: meshLabel,
+      bridge_mm: null,
+      orientation: 'Woven mosquito / door mesh — confirm mesh count and roll width.',
+      maxThicknessTip: 'Roll widths typically 2–6 ft including half-foot sizes.',
+      oa_note: design.short_desc || '',
+      plain: design.description || design.short_desc,
+      rows: [
+        { dt: 'Mesh count', dd: meshLabel },
+        { dt: 'Widths', dd: '2–6 ft (incl. half-feet)' },
+        { dt: 'Materials', dd: 'Aluminium / SS 304 / SS 202' }
+      ]
+    };
+  }
+  if (catSlug === 'pvc-plastic-jali' || catSlug === 'bird-monkey-spikes') {
+    return {
+      kind: 'simple',
+      family: shape || design.name,
+      holeLabel: design.name,
+      bridge_mm: null,
+      orientation: '',
+      maxThicknessTip: 'Send end use, size and quantity on the RFQ for an accurate quote.',
+      oa_note: design.short_desc || '',
+      plain: design.description || design.short_desc,
+      rows: [
+        { dt: 'Product', dd: design.name },
+        { dt: 'Notes', dd: design.short_desc || 'Ask for quote' }
+      ]
+    };
+  }
+
+  // Perforated default
+  const bridge = Math.round((pitch - hole) * 100) / 100;
+  const holeLabel = shape === 'Round' ? `Ø ${hole} mm` : shape === 'Square' ? `${hole} mm side` : `${hole} mm (across flats)`;
+  const orientation =
+    angle === 60
+      ? '60° staggered — denser pack, typically higher open area than 90° at the same hole and pitch.'
+      : '90° straight / square pitch — orthogonal rows, easier visual alignment with rectangular frames.';
+  const maxThicknessTip = `For conventional punching, keep sheet thickness ≤ ~${hole} mm (hole ≥ thickness). Confirm denser patterns and hard temper with us.`;
+  const family =
+    shape === 'Round' && angle === 60 ? 'Round 60°'
+      : shape === 'Round' && angle === 90 ? 'Round 90°'
+        : shape === 'Square' ? 'Square 90°'
+          : String(shape).indexOf('Hex') === 0 ? 'Hex 60°'
+            : `${shape} ${angle}°`;
+  return {
+    kind: 'perforated',
+    holeLabel,
+    bridge_mm: bridge,
+    orientation,
+    family,
+    maxThicknessTip,
+    oa_note: `${oa}% open area on the perforated field (blank edges excluded).`,
+    plain: `${design.name} is a ${family} stock pattern: ${holeLabel} holes on ${pitch} mm pitch, about ${oa}% open. Bridge between holes is roughly ${bridge} mm. Available in MS, GI, SS, aluminium, copper and brass — choose material above, then tell us thickness, sheet size and blank edge.`,
+    rows: null
+  };
+}
+
+function designSlug(n) {
+  return 'perforated-' + String(n).padStart(2, '0');
+}
+
+function designName(n) {
+  return 'Perforated ' + String(n).padStart(2, '0');
+}
+
+function faqsForDesign(design) {
+  // Prefer FAQ JSON already on the design (extra categories)
+  if (design.faq) {
+    try {
+      const parsed = typeof design.faq === 'string' ? JSON.parse(design.faq) : design.faq;
+      if (Array.isArray(parsed) && parsed.length) return parsed;
+    } catch (e) { /* fall through */ }
+  }
+  const name = design.name || designName(design.n);
+  const hole = Number(design.hole_mm);
+  const pitch = Number(design.pitch_mm);
+  const angle = Number(design.angle_deg);
+  const oa = Number(design.open_area_pct);
+  const shape = (design.hole_shape || 'Round').toLowerCase();
+  const bridge = Math.round((pitch - hole) * 100) / 100;
+  if (!hole || !pitch || Number.isNaN(oa)) {
+    return [
+      { q: `Tell me about ${name}`, a: design.short_desc || design.description || name },
+      { q: 'Do you deliver in Delhi NCR?', a: 'Yes. Garg Industrial Mesh supplies from Sector 9, Noida across Noida, Greater Noida, Delhi, Ghaziabad, Faridabad and Gurugram.' }
+    ];
+  }
+  return [
+    {
+      q: `What are the specs of ${name}?`,
+      a: `${name} is a ${shape} pattern: ${hole} mm hole, ${pitch} mm pitch, ${angle}° orientation, about ${oa}% open area. Approximate bridge between holes is ${bridge} mm.`
+    },
+    {
+      q: `Which materials are available for ${name}?`,
+      a: `${name} is available in Mild Steel, GI, Stainless Steel (304/316), Aluminium, Copper and Brass. Name the grade, thickness (mm), sheet size and blank edge on your RFQ.`
+    },
+    {
+      q: `How thick can the sheet be for ${name}?`,
+      a: `Shop rule: hole size should be ≥ sheet thickness for conventional punching. For ${name}, that means about ${hole} mm max thickness as a starting guide — confirm denser patterns and hard temper with us.`
+    },
+    {
+      q: `What blank edge can I order?`,
+      a: 'Custom blank (unperforated) edges 0–100 mm are standard — equal all sides or unequal per drawing. Wider margins available on request.'
+    },
+    {
+      q: 'Do you deliver perforated sheets in Delhi NCR?',
+      a: 'Yes. Garg Industrial Mesh supplies from Sector 9, Noida across Noida, Greater Noida, Delhi, Ghaziabad, Faridabad and Gurugram.'
+    }
+  ];
+}
+
+function buildDesignFaq(d) {
+  return JSON.stringify(faqsForDesign({ ...d, name: designName(d.n) }));
+}
+
+function buildCatalog() {
+  const designs = PERFORATED_DESIGNS.map((d) => {
+    const slug = designSlug(d.n);
+    const name = designName(d.n);
+    const holeLabel = d.hole_shape === 'Round' ? `Ø${d.hole_mm}` : `${d.hole_mm}`;
+    const short = `${d.hole_shape} ${d.angle_deg}° · ${holeLabel} / pitch ${d.pitch_mm} · OA ${d.open_area_pct}%`;
+    return {
+      slug,
+      name,
+      hole_shape: d.hole_shape,
+      hole_mm: d.hole_mm,
+      pitch_mm: d.pitch_mm,
+      angle_deg: d.angle_deg,
+      open_area_pct: d.open_area_pct,
+      short_desc: short,
+      description: `${name} is a stock ${d.hole_shape.toLowerCase()} perforation pattern punched to ${d.hole_mm} mm hole size on ${d.pitch_mm} mm pitch at ${d.angle_deg}° (${d.open_area_pct}% open area). Available across MS, GI, SS, aluminium, copper and brass from our Noida factory.`,
+      applications: 'Guards, HVAC, Facade, Speakers, Filtration, EMI vents, Decorative screens',
+      faq: buildDesignFaq(d),
+      meta_title: `${name} Perforated Sheet (${d.hole_shape} ${d.hole_mm}/${d.pitch_mm}) Noida | Garg`,
+      meta_description: `Buy ${name} perforated sheet in Noida — ${d.hole_shape.toLowerCase()} ${d.hole_mm} mm, pitch ${d.pitch_mm} mm, ${d.angle_deg}°, OA ${d.open_area_pct}%. MS, GI, SS, Alu, copper, brass. Quote: 9910238277.`,
+      meta_keywords: `perforated sheet, ${name.toLowerCase()}, ${d.hole_shape.toLowerCase()} perforated, perforated sheet noida`,
+      sort_order: d.n,
+      featured: d.n <= 6 ? 1 : 0,
+      materials: MATERIALS.map((m) => ({ ...m }))
+    };
+  });
+
+  const { extraCategories } = require('./catalog');
+  const perforated = {
+    slug: 'perforated-sheets',
+    name: 'Perforated Sheets',
+    short_desc: '29 stock hole patterns in MS, GI, SS, aluminium, copper and brass — custom blank edges and sheet sizes.',
+    description: 'CNC-punched perforated metal sheets from Garg Industrial Mesh, Sector 9 Noida. Choose a stock pattern (Perforated 01–29), then select material. Custom hole, pitch, open area and blank margins on request.',
+    guide_sections: JSON.stringify(GUIDE_SECTIONS),
+    meta_title: 'Perforated Sheets Noida | MS GI SS Aluminium Copper Brass | Garg',
+    meta_description: 'Perforated sheet manufacturer in Noida — 29 stock patterns, MS/GI/SS/aluminium/copper/brass. Custom hole, pitch, open area & blank edge. Call 9910238277.',
+    meta_keywords: 'perforated sheet noida, perforated sheet delhi, ms perforated sheet, ss perforated sheet, copper perforated sheet, brass perforated sheet',
+    sort_order: 1,
+    featured: 1,
+    designs
+  };
+  return {
+    categories: [perforated, ...extraCategories()]
+  };
+}
+
+/** Legacy export kept empty so old product seed paths no-op. */
+const products = [];
+
+function buildFaq() {
+  return '[]';
+}
+
+module.exports = {
+  products,
+  slugify,
+  buildFaq,
+  MATERIALS,
+  PERFORATED_DESIGNS,
+  GUIDE_SECTIONS,
+  designSlug,
+  designName,
+  buildCatalog,
+  materialBySlug,
+  buildDesignTech,
+  faqsForDesign
+};
