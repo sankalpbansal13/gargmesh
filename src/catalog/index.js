@@ -5,6 +5,12 @@ const machhar = require('./machhar-jali');
 const pvc = require('./pvc-jali');
 const bird = require('./bird-spikes');
 
+/** UI / nav grouping for category objects (not a DB column). */
+const CATEGORY_GROUPS = {
+  sheet: 'sheet',
+  animal: 'animal'
+};
+
 function extraCategories() {
   return [
     ssWelded.buildCategory(),
@@ -12,7 +18,9 @@ function extraCategories() {
     chainLink.buildCategory(),
     machhar.buildCategory(),
     pvc.buildCategory(),
-    bird.buildCategory()
+    bird.buildBirdCategory(),
+    bird.buildMonkeyCategory(),
+    bird.buildNetCategory()
   ];
 }
 
@@ -24,4 +32,34 @@ function allExtraMaterials() {
   return map;
 }
 
-module.exports = { extraCategories, allExtraMaterials };
+const GROUP_LABELS = {
+  sheet: 'Sheet & mesh',
+  animal: 'Animal prevention'
+};
+
+/** Static slug → group (avoid rebuilding catalog on every request). */
+const GROUP_BY_SLUG = {
+  'perforated-ms-gi-ss-al': 'sheet',
+  'perforated-copper': 'sheet',
+  'perforated-brass': 'sheet',
+  'ss-welded-mesh': 'sheet',
+  'expanded-mesh': 'sheet',
+  'chain-link-mesh': 'sheet',
+  'pvc-plastic-jali': 'sheet',
+  'door-machhar-jali': 'animal',
+  'bird-spikes': 'animal',
+  'monkey-spikes': 'animal',
+  'anti-bird-net': 'animal'
+};
+
+function categoryGroup(slug) {
+  return GROUP_BY_SLUG[slug] || 'sheet';
+}
+
+module.exports = {
+  extraCategories,
+  allExtraMaterials,
+  CATEGORY_GROUPS,
+  categoryGroup,
+  GROUP_LABELS
+};

@@ -3,6 +3,98 @@ const { buildCatalog } = require('./seed-data');
 const { ensureDesignImages } = require('./seed-images');
 const { ensureBlogPosts } = require('./seed-blog');
 
+function tableHasColumn(table, column) {
+  return db.prepare(`PRAGMA table_info(${table})`).all().some((c) => c.name === column);
+}
+
+function retireLegacyCategories() {
+  if (!tableHasColumn('categories', 'deleted')) return;
+  const r = db.prepare(
+    `UPDATE categories SET deleted = 1 WHERE slug IN ('perforated-sheets', 'bird-monkey-spikes') AND deleted = 0`
+  ).run();
+  if (r.changes) {
+    console.log(`Seed: soft-deleted ${r.changes} legacy categor${r.changes === 1 ? 'y' : 'ies'}.`);
+  }
+}
+
+/** Ensure seed materials exist; soft-delete design_materials not in the seed list for that design. */
+function syncDesignMaterials(catalog) {
+  const getCat = db.prepare('SELECT id FROM categories WHERE slug = ?');
+  const getDesign = db.prepare('SELECT id FROM designs WHERE category_id = ? AND slug = ?');
+  const hasMatDeleted = tableHasColumn('design_materials', 'deleted');
+  const getMat = hasMatDeleted
+    ? db.prepare('SELECT id, deleted FROM design_materials WHERE design_id = ? AND slug = ?')
+    : db.prepare('SELECT id, 0 AS deleted FROM design_materials WHERE design_id = ? AND slug = ?');
+  const insertMat = db.prepare(`
+    INSERT INTO design_materials
+    (design_id, slug, name, price_from, grades, short_desc, sort_order)
+    VALUES (@design_id, @slug, @name, @price_from, @grades, @short_desc, @sort_order)
+  `);
+  const updateMat = db.prepare(`
+    UPDATE design_materials SET name = ?, price_from = ?, grades = ?, short_desc = ?, sort_order = ?
+    WHERE id = ?
+  `);
+  const restoreMat = hasMatDeleted
+    ? db.prepare('UPDATE design_materials SET deleted = 0 WHERE id = ?')
+    : null;
+  const softDeleteMat = hasMatDeleted
+    ? db.prepare('UPDATE design_materials SET deleted = 1 WHERE design_id = ? AND slug = ? AND deleted = 0')
+    : null;
+  const listMats = db.prepare('SELECT id, slug FROM design_materials WHERE design_id = ?');
+
+  let matsAdded = 0;
+  let matsRestored = 0;
+  let matsRetired = 0;
+
+  const tx = db.transaction(() => {
+    for (const cat of catalog.categories) {
+      const catRow = getCat.get(cat.slug);
+      if (!catRow) continue;
+      for (const d of cat.designs) {
+        const designRow = getDesign.get(catRow.id, d.slug);
+        if (!designRow) continue;
+        const seedSlugs = new Set((d.materials || []).map((m) => m.slug));
+        for (const m of d.materials || []) {
+          const existing = getMat.get(designRow.id, m.slug);
+          if (!existing) {
+            insertMat.run({
+              design_id: designRow.id,
+              slug: m.slug,
+              name: m.name,
+              price_from: m.price_from,
+              grades: m.grades,
+              short_desc: m.short_desc,
+              sort_order: m.sort_order
+            });
+            matsAdded++;
+          } else {
+            updateMat.run(m.name, m.price_from, m.grades, m.short_desc, m.sort_order, existing.id);
+            if (hasMatDeleted && existing.deleted) {
+              restoreMat.run(existing.id);
+              matsRestored++;
+            }
+          }
+        }
+        if (softDeleteMat) {
+          for (const row of listMats.all(designRow.id)) {
+            if (!seedSlugs.has(row.slug)) {
+              const r = softDeleteMat.run(designRow.id, row.slug);
+              if (r.changes) matsRetired++;
+            }
+          }
+        }
+      }
+    }
+  });
+  tx();
+
+  if (matsAdded || matsRestored || matsRetired) {
+    console.log(
+      `Seed: materials synced (+${matsAdded} added, ${matsRestored} restored, ${matsRetired} soft-deleted).`
+    );
+  }
+}
+
 function ensureCatalog() {
   const catalog = buildCatalog();
   const catCount = db.prepare('SELECT COUNT(*) AS c FROM categories').get().c;
@@ -31,7 +123,7 @@ function ensureCatalog() {
       angle_deg = @angle_deg, open_area_pct = @open_area_pct, short_desc = @short_desc,
       description = @description, applications = @applications, faq = @faq,
       meta_title = @meta_title, meta_description = @meta_description, meta_keywords = @meta_keywords,
-      sort_order = @sort_order, featured = @featured
+      sort_order = @sort_order, featured = @featured, deleted = 0
     WHERE id = @id
   `);
   const insertMat = db.prepare(`
@@ -40,6 +132,7 @@ function ensureCatalog() {
     VALUES (@design_id, @slug, @name, @price_from, @grades, @short_desc, @sort_order)
   `);
   const getMat = db.prepare('SELECT id FROM design_materials WHERE design_id = ? AND slug = ?');
+  const hasCatDeleted = tableHasColumn('categories', 'deleted');
 
   let catsAdded = 0;
   let designsAdded = 0;
@@ -66,15 +159,27 @@ function ensureCatalog() {
         catsAdded++;
         console.log('Seed: added category', cat.name);
       } else {
-        db.prepare(`
-          UPDATE categories SET guide_sections = ?, short_desc = ?, description = ?,
-            meta_title = ?, meta_description = ?, meta_keywords = ?, featured = ?, sort_order = ?, name = ?
-          WHERE id = ?
-        `).run(
-          cat.guide_sections || null, cat.short_desc, cat.description,
-          cat.meta_title, cat.meta_description, cat.meta_keywords, cat.featured, cat.sort_order, cat.name,
-          catRow.id
-        );
+        if (hasCatDeleted) {
+          db.prepare(`
+            UPDATE categories SET guide_sections = ?, short_desc = ?, description = ?,
+              meta_title = ?, meta_description = ?, meta_keywords = ?, featured = ?, sort_order = ?, name = ?, deleted = 0
+            WHERE id = ?
+          `).run(
+            cat.guide_sections || null, cat.short_desc, cat.description,
+            cat.meta_title, cat.meta_description, cat.meta_keywords, cat.featured, cat.sort_order, cat.name,
+            catRow.id
+          );
+        } else {
+          db.prepare(`
+            UPDATE categories SET guide_sections = ?, short_desc = ?, description = ?,
+              meta_title = ?, meta_description = ?, meta_keywords = ?, featured = ?, sort_order = ?, name = ?
+            WHERE id = ?
+          `).run(
+            cat.guide_sections || null, cat.short_desc, cat.description,
+            cat.meta_title, cat.meta_description, cat.meta_keywords, cat.featured, cat.sort_order, cat.name,
+            catRow.id
+          );
+        }
       }
       for (const d of cat.designs) {
         let designRow = getDesign.get(catRow.id, d.slug);
@@ -125,6 +230,9 @@ function ensureCatalog() {
     }
   });
   tx();
+
+  retireLegacyCategories();
+  syncDesignMaterials(catalog);
 
   if (catCount === 0) {
     console.log(`Seed: catalog inserted (${catsAdded} categories, ${designsAdded} designs, ${matsAdded} materials).`);

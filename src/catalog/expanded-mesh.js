@@ -16,7 +16,7 @@ const DESIGNS = [
   { name: 'Telesto', swd: 25, lwd: 7, strand: 5 },
   { name: 'Tethys', swd: 25, lwd: 15, strand: 8 },
   { name: 'Titan', swd: 18, lwd: 9, strand: 4 },
-  { name: 'Triton', swd: null, lwd: null, strand: null }
+  { name: 'Triton', swd: 75, lwd: 15, strand: 8 }
 ];
 
 const MATERIALS = [
@@ -147,8 +147,9 @@ function buildCategory() {
     meta_title: 'Expanded Mesh Noida | SWD LWD Strand | Garg Industrial Mesh',
     meta_description: 'Expanded mesh supplier in Noida — named stock patterns with SWD/LWD/strand specs. MS, aluminium, SS. Quote 9910238277.',
     meta_keywords: 'expanded mesh noida, expanded metal mesh, SWD LWD strand, aluminium expanded mesh',
-    sort_order: 3,
+    sort_order: 5,
     featured: 1,
+    group: 'sheet',
     designs,
     content_folder: null,
     materials_catalog: MATERIALS

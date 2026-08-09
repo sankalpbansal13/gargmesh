@@ -213,12 +213,29 @@ const GUIDE_SECTIONS = [
   }
 ];
 
-const { allExtraMaterials } = require('./catalog');
+const { allExtraMaterials, CATEGORY_GROUPS } = require('./catalog');
 
 function materialBySlug(slug) {
   const fromPerf = MATERIALS.find((m) => m.slug === slug);
   if (fromPerf) return fromPerf;
   return allExtraMaterials()[slug] || null;
+}
+
+function perforatedMaterialsPlain(catSlug) {
+  if (catSlug === 'perforated-copper') return 'copper';
+  if (catSlug === 'perforated-brass') return 'brass';
+  if (catSlug === 'perforated-ms-gi-ss-al' || (catSlug && catSlug.startsWith('perforated-'))) {
+    return 'MS, GI, SS and aluminium';
+  }
+  return 'MS, GI, SS, aluminium, copper and brass';
+}
+
+function parseWeightGSqft(design) {
+  if (design.weight_g_sqft != null && !Number.isNaN(Number(design.weight_g_sqft))) {
+    return Number(design.weight_g_sqft);
+  }
+  const m = String(design.short_desc || '').match(/~([\d.]+)\s*g\/sqft/i);
+  return m ? Number(m[1]) : null;
 }
 
 /** Computed technicals for a design row (DB or seed shape). */
@@ -235,22 +252,29 @@ function buildDesignTech(design, category) {
     const openingDd = hole
       ? (openB && openB !== hole ? `${hole} × ${openB} mm` : `${hole} × ${hole} mm`)
       : 'See SKU';
+    const weight = parseWeightGSqft(design);
+    const giWeight = weight != null ? Math.round(weight * 1.05) : null;
+    const rows = [
+      { dt: 'Opening', dd: openingDd },
+      { dt: 'Wire', dd: pitch ? `${pitch} mm` : 'See SKU / SWG' },
+      { dt: 'Form', dd: 'Rolls & panels' },
+      { dt: 'Grades', dd: 'SS 304 / SS 201 / MS / GI' }
+    ];
+    if (weight != null) {
+      rows.push({ dt: 'Weight (SS/MS)', dd: `≈ ${weight} g/sqft` });
+      rows.push({ dt: 'Weight (GI)', dd: `≈ ${giWeight} g/sqft (approx — confirm on quote)` });
+    }
+    rows.push({ dt: 'SKU', dd: design.short_desc || design.name });
     return {
       kind: 'welded',
       family: shape || 'Welded',
       holeLabel: hole ? `${hole} mm` : 'See SKU',
       bridge_mm: pitch || null,
       orientation: 'Welded intersections — confirm clear opening vs pitch on RFQ.',
-      maxThicknessTip: 'State roll (e.g. 4′×50′) or panel size, grade (304/201), and wire mm/SWG.',
+      maxThicknessTip: 'State roll (e.g. 4′×50′) or panel size, material/grade (SS 304/201, MS, GI), and wire mm/SWG.',
       oa_note: design.short_desc || '',
       plain: design.description || design.short_desc || design.name,
-      rows: [
-        { dt: 'Opening', dd: openingDd },
-        { dt: 'Wire', dd: pitch ? `${pitch} mm` : 'See SKU / SWG' },
-        { dt: 'Form', dd: 'Rolls & panels' },
-        { dt: 'Grades', dd: 'SS 304 / SS 201' },
-        { dt: 'SKU', dd: design.short_desc || design.name }
-      ]
+      rows
     };
   }
   if (catSlug === 'expanded-mesh') {
@@ -317,7 +341,13 @@ function buildDesignTech(design, category) {
       ]
     };
   }
-  if (catSlug === 'pvc-plastic-jali' || catSlug === 'bird-monkey-spikes') {
+  if (
+    catSlug === 'pvc-plastic-jali' ||
+    catSlug === 'bird-monkey-spikes' ||
+    catSlug === 'bird-spikes' ||
+    catSlug === 'monkey-spikes' ||
+    catSlug === 'anti-bird-net'
+  ) {
     return {
       kind: 'simple',
       family: shape || design.name,
@@ -334,7 +364,36 @@ function buildDesignTech(design, category) {
     };
   }
 
-  // Perforated default
+  // Perforated (legacy slug or split categories perforated-*)
+  if (catSlug === 'perforated-sheets' || (catSlug && catSlug.startsWith('perforated-'))) {
+    const bridge = Math.round((pitch - hole) * 100) / 100;
+    const holeLabel = shape === 'Round' ? `Ø ${hole} mm` : shape === 'Square' ? `${hole} mm side` : `${hole} mm (across flats)`;
+    const orientation =
+      angle === 60
+        ? '60° staggered — denser pack, typically higher open area than 90° at the same hole and pitch.'
+        : '90° straight / square pitch — orthogonal rows, easier visual alignment with rectangular frames.';
+    const maxThicknessTip = `For conventional punching, keep sheet thickness ≤ ~${hole} mm (hole ≥ thickness). Confirm denser patterns and hard temper with us.`;
+    const family =
+      shape === 'Round' && angle === 60 ? 'Round 60°'
+        : shape === 'Round' && angle === 90 ? 'Round 90°'
+          : shape === 'Square' ? 'Square 90°'
+            : String(shape).indexOf('Hex') === 0 ? 'Hex 60°'
+              : `${shape} ${angle}°`;
+    const matsPlain = perforatedMaterialsPlain(catSlug);
+    return {
+      kind: 'perforated',
+      holeLabel,
+      bridge_mm: bridge,
+      orientation,
+      family,
+      maxThicknessTip,
+      oa_note: `${oa}% open area on the perforated field (blank edges excluded).`,
+      plain: `${design.name} is a ${family} stock pattern: ${holeLabel} holes on ${pitch} mm pitch, about ${oa}% open. Bridge between holes is roughly ${bridge} mm. Available in ${matsPlain} — choose material above, then tell us thickness, sheet size and blank edge.`,
+      rows: null
+    };
+  }
+
+  // Fallback perforated-shaped geometry (no category slug)
   const bridge = Math.round((pitch - hole) * 100) / 100;
   const holeLabel = shape === 'Round' ? `Ø ${hole} mm` : shape === 'Square' ? `${hole} mm side` : `${hole} mm (across flats)`;
   const orientation =
@@ -356,7 +415,7 @@ function buildDesignTech(design, category) {
     family,
     maxThicknessTip,
     oa_note: `${oa}% open area on the perforated field (blank edges excluded).`,
-    plain: `${design.name} is a ${family} stock pattern: ${holeLabel} holes on ${pitch} mm pitch, about ${oa}% open. Bridge between holes is roughly ${bridge} mm. Available in MS, GI, SS, aluminium, copper and brass — choose material above, then tell us thickness, sheet size and blank edge.`,
+    plain: `${design.name} is a ${family} stock pattern: ${holeLabel} holes on ${pitch} mm pitch, about ${oa}% open. Bridge between holes is roughly ${bridge} mm. Available in MS, GI, SS and aluminium — choose material above, then tell us thickness, sheet size and blank edge.`,
     rows: null
   };
 }
@@ -384,6 +443,8 @@ function faqsForDesign(design) {
   const oa = Number(design.open_area_pct);
   const shape = (design.hole_shape || 'Round').toLowerCase();
   const bridge = Math.round((pitch - hole) * 100) / 100;
+  const materialsLine = design.materials_faq
+    || 'Mild Steel, GI, Stainless Steel (304/316), Aluminium, Copper and Brass';
   if (!hole || !pitch || Number.isNaN(oa)) {
     return [
       { q: `Tell me about ${name}`, a: design.short_desc || design.description || name },
@@ -397,7 +458,7 @@ function faqsForDesign(design) {
     },
     {
       q: `Which materials are available for ${name}?`,
-      a: `${name} is available in Mild Steel, GI, Stainless Steel (304/316), Aluminium, Copper and Brass. Name the grade, thickness (mm), sheet size and blank edge on your RFQ.`
+      a: `${name} is available in ${materialsLine}. Name the grade, thickness (mm), sheet size and blank edge on your RFQ.`
     },
     {
       q: `How thick can the sheet be for ${name}?`,
@@ -414,12 +475,15 @@ function faqsForDesign(design) {
   ];
 }
 
-function buildDesignFaq(d) {
-  return JSON.stringify(faqsForDesign({ ...d, name: designName(d.n) }));
+function buildDesignFaq(d, materialsFaq) {
+  return JSON.stringify(faqsForDesign({ ...d, name: designName(d.n), materials_faq: materialsFaq }));
 }
 
-function buildCatalog() {
-  const designs = PERFORATED_DESIGNS.map((d) => {
+function buildPerforatedDesigns(materials, opts) {
+  const matLabel = opts.materialsLabel;
+  const matMeta = opts.materialsMeta;
+  const matDesc = opts.materialsDesc;
+  return PERFORATED_DESIGNS.map((d) => {
     const slug = designSlug(d.n);
     const name = designName(d.n);
     const holeLabel = d.hole_shape === 'Round' ? `Ø${d.hole_mm}` : `${d.hole_mm}`;
@@ -433,34 +497,84 @@ function buildCatalog() {
       angle_deg: d.angle_deg,
       open_area_pct: d.open_area_pct,
       short_desc: short,
-      description: `${name} is a stock ${d.hole_shape.toLowerCase()} perforation pattern punched to ${d.hole_mm} mm hole size on ${d.pitch_mm} mm pitch at ${d.angle_deg}° (${d.open_area_pct}% open area). Available across MS, GI, SS, aluminium, copper and brass from our Noida factory.`,
-      applications: 'Guards, HVAC, Facade, Speakers, Filtration, EMI vents, Decorative screens',
-      faq: buildDesignFaq(d),
+      description: `${name} is a stock ${d.hole_shape.toLowerCase()} perforation pattern punched to ${d.hole_mm} mm hole size on ${d.pitch_mm} mm pitch at ${d.angle_deg}° (${d.open_area_pct}% open area). Available in ${matDesc} from our Noida factory.`,
+      applications: opts.applications || 'Guards, HVAC, Facade, Speakers, Filtration, EMI vents, Decorative screens',
+      faq: buildDesignFaq(d, matLabel),
       meta_title: `${name} Perforated Sheet (${d.hole_shape} ${d.hole_mm}/${d.pitch_mm}) Noida | Garg`,
-      meta_description: `Buy ${name} perforated sheet in Noida — ${d.hole_shape.toLowerCase()} ${d.hole_mm} mm, pitch ${d.pitch_mm} mm, ${d.angle_deg}°, OA ${d.open_area_pct}%. MS, GI, SS, Alu, copper, brass. Quote: 9910238277.`,
+      meta_description: `Buy ${name} perforated sheet in Noida — ${d.hole_shape.toLowerCase()} ${d.hole_mm} mm, pitch ${d.pitch_mm} mm, ${d.angle_deg}°, OA ${d.open_area_pct}%. ${matMeta}. Quote: 9910238277.`,
       meta_keywords: `perforated sheet, ${name.toLowerCase()}, ${d.hole_shape.toLowerCase()} perforated, perforated sheet noida`,
       sort_order: d.n,
       featured: d.n <= 6 ? 1 : 0,
-      materials: MATERIALS.map((m) => ({ ...m }))
+      materials: materials.map((m) => ({ ...m }))
     };
   });
+}
 
-  const { extraCategories } = require('./catalog');
-  const perforated = {
-    slug: 'perforated-sheets',
-    name: 'Perforated Sheets',
-    short_desc: '29 stock hole patterns in MS, GI, SS, aluminium, copper and brass — custom blank edges and sheet sizes.',
-    description: 'CNC-punched perforated metal sheets from Garg Industrial Mesh, Sector 9 Noida. Choose a stock pattern (Perforated 01–29), then select material. Custom hole, pitch, open area and blank margins on request.',
+function buildCatalog() {
+  const bySlug = (slugs) => MATERIALS.filter((m) => slugs.includes(m.slug));
+  const { extraCategories, CATEGORY_GROUPS } = require('./catalog');
+
+  const perforatedMsGiSsAl = {
+    slug: 'perforated-ms-gi-ss-al',
+    name: 'Perforated Sheet (MS / GI / SS / Al)',
+    short_desc: '29 stock hole patterns in Mild Steel, GI, Stainless and Aluminium — custom blank edges and sheet sizes.',
+    description: 'CNC-punched perforated metal sheets in MS, GI, SS and aluminium from Garg Industrial Mesh, Sector 9 Noida. Choose a stock pattern (Perforated 01–29), then select material. Custom hole, pitch, open area and blank margins on request.',
     guide_sections: JSON.stringify(GUIDE_SECTIONS),
-    meta_title: 'Perforated Sheets Noida | MS GI SS Aluminium Copper Brass | Garg',
-    meta_description: 'Perforated sheet manufacturer in Noida — 29 stock patterns, MS/GI/SS/aluminium/copper/brass. Custom hole, pitch, open area & blank edge. Call 9910238277.',
-    meta_keywords: 'perforated sheet noida, perforated sheet delhi, ms perforated sheet, ss perforated sheet, copper perforated sheet, brass perforated sheet',
+    meta_title: 'Perforated Sheet MS GI SS Aluminium Noida | Garg',
+    meta_description: 'Perforated sheet manufacturer in Noida — 29 stock patterns in MS/GI/SS/aluminium. Custom hole, pitch, open area & blank edge. Call 9910238277.',
+    meta_keywords: 'perforated sheet noida, ms perforated sheet, gi perforated, ss perforated sheet, aluminium perforated',
     sort_order: 1,
     featured: 1,
-    designs
+    group: CATEGORY_GROUPS.sheet,
+    designs: buildPerforatedDesigns(bySlug(['mild-steel', 'gi', 'stainless-steel', 'aluminium']), {
+      materialsLabel: 'Mild Steel, GI, Stainless Steel (304/316) and Aluminium',
+      materialsMeta: 'MS, GI, SS, Alu',
+      materialsDesc: 'MS, GI, SS and aluminium'
+    })
   };
+
+  const perforatedCopper = {
+    slug: 'perforated-copper',
+    name: 'Perforated Sheet — Copper',
+    short_desc: '29 stock hole patterns in copper — EMI vents, cladding and conductive panels.',
+    description: 'CNC-punched copper perforated sheets from Garg Industrial Mesh, Sector 9 Noida. Same 29 stock patterns (Perforated 01–29) in copper grades. Custom blank edges and sheet sizes on request.',
+    guide_sections: JSON.stringify(GUIDE_SECTIONS),
+    meta_title: 'Copper Perforated Sheet Noida | Garg Industrial Mesh',
+    meta_description: 'Copper perforated sheet manufacturer in Noida — 29 stock patterns. Custom hole, pitch, open area & blank edge. Call 9910238277.',
+    meta_keywords: 'copper perforated sheet noida, copper perforated sheet, EMI perforated copper',
+    sort_order: 2,
+    featured: 1,
+    group: CATEGORY_GROUPS.sheet,
+    designs: buildPerforatedDesigns(bySlug(['copper']), {
+      materialsLabel: 'Copper (e.g. C11000 ETP)',
+      materialsMeta: 'Copper',
+      materialsDesc: 'copper',
+      applications: 'EMI vents, architectural cladding, filters, HVAC, decorative screens'
+    })
+  };
+
+  const perforatedBrass = {
+    slug: 'perforated-brass',
+    name: 'Perforated Sheet — Brass',
+    short_desc: '29 stock hole patterns in brass — decorative screens and architectural panels.',
+    description: 'CNC-punched brass perforated sheets from Garg Industrial Mesh, Sector 9 Noida. Same 29 stock patterns (Perforated 01–29) in brass. Custom blank edges and sheet sizes on request.',
+    guide_sections: JSON.stringify(GUIDE_SECTIONS),
+    meta_title: 'Brass Perforated Sheet Noida | Garg Industrial Mesh',
+    meta_description: 'Brass perforated sheet manufacturer in Noida — 29 stock patterns. Custom hole, pitch, open area & blank edge. Call 9910238277.',
+    meta_keywords: 'brass perforated sheet noida, brass perforated sheet, decorative brass perforated',
+    sort_order: 3,
+    featured: 1,
+    group: CATEGORY_GROUPS.sheet,
+    designs: buildPerforatedDesigns(bySlug(['brass']), {
+      materialsLabel: 'Brass (e.g. C26000 cartridge)',
+      materialsMeta: 'Brass',
+      materialsDesc: 'brass',
+      applications: 'Elevator cladding, decorative screens, architectural interiors, premium visual panels'
+    })
+  };
+
   return {
-    categories: [perforated, ...extraCategories()]
+    categories: [perforatedMsGiSsAl, perforatedCopper, perforatedBrass, ...extraCategories()]
   };
 }
 
@@ -481,7 +595,9 @@ module.exports = {
   designSlug,
   designName,
   buildCatalog,
+  buildPerforatedDesigns,
   materialBySlug,
   buildDesignTech,
-  faqsForDesign
+  faqsForDesign,
+  CATEGORY_GROUPS
 };
