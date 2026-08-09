@@ -520,6 +520,38 @@
     }
   }
 
+  // --- Step-2 design card auto-sliders ---
+  Array.prototype.forEach.call(document.querySelectorAll('[data-card-slider]'), function (media) {
+    var imgs = media.querySelectorAll('img');
+    media.classList.add('is-ready');
+    // Unique src only — identical files must not blink
+    var unique = [];
+    var seenSrc = {};
+    Array.prototype.forEach.call(imgs, function (img) {
+      var src = img.getAttribute('src') || '';
+      if (!src || seenSrc[src]) return;
+      seenSrc[src] = true;
+      unique.push(img);
+    });
+    // Hide duplicate imgs so they never flash
+    Array.prototype.forEach.call(imgs, function (img) {
+      if (unique.indexOf(img) === -1) img.style.display = 'none';
+    });
+    if (unique.length < 2 || reduceMotion) {
+      media.removeAttribute('data-card-slider');
+      media.classList.remove('wiz-card-media-slider');
+      if (unique[0]) unique[0].classList.add('is-on');
+      return;
+    }
+    var i = 0;
+    unique[0].classList.add('is-on');
+    setInterval(function () {
+      unique[i].classList.remove('is-on');
+      i = (i + 1) % unique.length;
+      unique[i].classList.add('is-on');
+    }, 2800);
+  });
+
   // --- Prefill enquiry message with selected variant ---
   var variant = document.getElementById('variantSelect');
   var msgField = document.querySelector('textarea[name="message"]');

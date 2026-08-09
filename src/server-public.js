@@ -18,6 +18,7 @@ const { sectors: sectorList, findBySlug: findSector, byCity: localitiesByCity, g
 const { safeRedirectPath } = require('./safe-redirect');
 const { createSqliteSessionStore } = require('./session-store');
 const { GUIDE_SECTIONS, materialBySlug, buildDesignTech, faqsForDesign } = require('./seed-data');
+const { categoryGroup, GROUP_LABELS } = require('./catalog');
 
 seedRun();
 
@@ -161,7 +162,39 @@ function existingImages(images) {
   });
 }
 
-// Attach primary/cover image URL onto design rows for listing cards.
+// Content fingerprint so identical bytes under different names don't blink.
+const uploadHashCache = new Map();
+function uploadContentKey(filename) {
+  const base = path.basename(filename || '');
+  if (!base) return '';
+  if (uploadHashCache.has(base)) return uploadHashCache.get(base);
+  const fp = safeUploadPath(base);
+  let key = base;
+  try {
+    if (fp && fs.existsSync(fp)) {
+      key = crypto.createHash('md5').update(fs.readFileSync(fp)).digest('hex');
+    }
+  } catch (e) { /* keep basename */ }
+  uploadHashCache.set(base, key);
+  return key;
+}
+
+/** Keep first occurrence of each distinct image (by filename + content hash). */
+function dedupeImageRows(images) {
+  const seen = new Set();
+  return (images || []).filter((img) => {
+    const base = path.basename(img.filename || '');
+    if (!base) return false;
+    const key = uploadContentKey(base);
+    if (seen.has(base) || seen.has(key)) return false;
+    seen.add(base);
+    seen.add(key);
+    return true;
+  });
+}
+
+// Attach cover + gallery URLs onto design rows for listing cards / auto-sliders.
+// Deduplicate by filename + file contents — same/near-same files must not blink.
 function attachDesignCovers(designs) {
   if (!designs || !designs.length) return designs || [];
   const ids = designs.map(d => d.id);
@@ -171,14 +204,30 @@ function attachDesignCovers(designs) {
      WHERE design_id IN (${placeholders})
      ORDER BY is_cover DESC, sort_order ASC, id ASC`
   ).all(...ids);
-  const coverById = {};
+  const galleryById = {};
+  const seenById = {};
   for (const row of rows) {
-    if (coverById[row.design_id]) continue;
     if (!existingImages([row]).length) continue;
-    coverById[row.design_id] = '/uploads/' + path.basename(row.filename);
+    const base = path.basename(row.filename);
+    const contentKey = uploadContentKey(base);
+    const url = '/uploads/' + base;
+    if (!galleryById[row.design_id]) {
+      galleryById[row.design_id] = [];
+      seenById[row.design_id] = new Set();
+    }
+    const seen = seenById[row.design_id];
+    if (seen.has(base) || seen.has(contentKey)) continue;
+    seen.add(base);
+    seen.add(contentKey);
+    if (galleryById[row.design_id].length < 6) galleryById[row.design_id].push(url);
   }
   return designs.map(d => {
-    if (coverById[d.id]) d.image = coverById[d.id];
+    const gallery = galleryById[d.id] || [];
+    if (gallery.length) {
+      d.image = gallery[0];
+      // Only expose a multi-image gallery when there are truly distinct files
+      d.images = gallery.length > 1 ? gallery : [gallery[0]];
+    }
     return d;
   });
 }
@@ -366,8 +415,9 @@ app.get('/', (req, res) => {
     'SELECT * FROM categories WHERE deleted = 0 ORDER BY featured DESC, sort_order ASC, name ASC'
   ).all());
   // Featured = product types (categories), never individual designs
-  const featured = categories.filter((c) => c.featured).slice(0, 8);
-  const featuredTypes = featured.length ? featured : categories.slice(0, 8);
+  // Prefer sort_order so all 3 perforated + key types appear; allow up to 12 featured cards
+  const featured = categories.filter((c) => c.featured).sort((a, b) => a.sort_order - b.sort_order).slice(0, 12);
+  const featuredTypes = featured.length ? featured : categories.slice(0, 12);
   res.render('home', {
     title: 'Industrial Wire Mesh & Perforated Sheets Supplier in Noida | Garg Industrial Mesh',
     products: featuredTypes, featured: featuredTypes, categories, page: 'home',
@@ -377,15 +427,40 @@ app.get('/', (req, res) => {
 
 app.get('/products', (req, res) => {
   const categories = enrichCategories(db.prepare(
-    'SELECT * FROM categories WHERE deleted = 0 ORDER BY featured DESC, sort_order ASC, name ASC'
+    'SELECT * FROM categories WHERE deleted = 0 ORDER BY sort_order ASC, name ASC'
   ).all());
+  categories.forEach((c) => {
+    c.group = categoryGroup(c.slug);
+    c.group_label = GROUP_LABELS[c.group] || c.group;
+  });
+  const groups = [
+    { key: 'sheet', label: GROUP_LABELS.sheet, categories: categories.filter((c) => c.group === 'sheet') },
+    { key: 'animal', label: GROUP_LABELS.animal, categories: categories.filter((c) => c.group === 'animal') }
+  ].filter((g) => g.categories.length);
   res.render('products', {
-    title: 'Step 1: Choose sheet type | Garg Industrial Mesh',
-    categories, page: 'products'
+    title: 'Step 1: Choose product type | Garg Industrial Mesh',
+    categories, groups, page: 'products'
   });
 });
 
+// Legacy redirects
+app.get('/products/perforated-sheets', (req, res) => {
+  res.redirect(301, '/products/perforated-ms-gi-ss-al');
+});
+app.get('/products/bird-monkey-spikes', (req, res) => {
+  res.redirect(301, '/products/bird-spikes');
+});
+app.get('/products/bird-monkey-spikes/:designSlug', (req, res) => {
+  res.redirect(301, '/products/bird-spikes');
+});
+
 app.get('/products/:categorySlug', (req, res) => {
+  if (req.params.categorySlug === 'perforated-sheets') {
+    return res.redirect(301, '/products/perforated-ms-gi-ss-al');
+  }
+  if (req.params.categorySlug === 'bird-monkey-spikes') {
+    return res.redirect(301, '/products/bird-spikes');
+  }
   const category = db.prepare(
     'SELECT * FROM categories WHERE slug = ? AND deleted = 0'
   ).get(req.params.categorySlug);
@@ -394,7 +469,7 @@ app.get('/products/:categorySlug', (req, res) => {
   const shape = (req.query.shape || '').trim();
   let sql = 'SELECT * FROM designs WHERE category_id = ? AND deleted = 0';
   const params = [category.id];
-  if (category.slug === 'perforated-sheets') {
+  if (category.slug === 'perforated-sheets' || String(category.slug).startsWith('perforated-')) {
     if (shape === 'round-60') { sql += ' AND hole_shape = ? AND angle_deg = 60'; params.push('Round'); }
     else if (shape === 'round-90') { sql += ' AND hole_shape = ? AND angle_deg = 90'; params.push('Round'); }
     else if (shape === 'square') { sql += ' AND hole_shape = ?'; params.push('Square'); }
@@ -451,12 +526,9 @@ app.get('/products/:categorySlug/:designSlug', (req, res) => {
   ).all(design.id);
   images = existingImages(images);
 
-  // Prefer images tagged for selected material, else cover/generic
-  let displayImages = images;
-  if (selected) {
-    const matImgs = images.filter(i => i.material_slug === selected.slug);
-    if (matImgs.length) displayImages = matImgs;
-  }
+  // Same design gallery for every material — do not swap photos when material changes.
+  // Drop duplicate / identical-content files (same pattern under different names).
+  const displayImages = dedupeImageRows(images);
 
   const label = selected ? `${design.name} — ${selected.name}` : design.name;
   const tech = buildDesignTech(design, category);
@@ -464,7 +536,10 @@ app.get('/products/:categorySlug/:designSlug', (req, res) => {
   const faqs = faqsForDesign(design);
   let guideSections = [];
   try { guideSections = category.guide_sections ? JSON.parse(category.guide_sections) : []; } catch (e) { guideSections = []; }
-  if (category.slug === 'perforated-sheets' && (!guideSections || !guideSections.length)) {
+  if (
+    (category.slug === 'perforated-sheets' || String(category.slug).startsWith('perforated-')) &&
+    (!guideSections || !guideSections.length)
+  ) {
     guideSections = GUIDE_SECTIONS;
   }
 

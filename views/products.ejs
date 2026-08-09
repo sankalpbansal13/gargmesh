@@ -1,4 +1,4 @@
-<% const meta_description = "Step 1: choose your sheet type — perforated sheets and more from Garg Industrial Mesh, Noida."; %>
+<% const meta_description = "Step 1: choose your product type — sheet & mesh or animal prevention from Garg Industrial Mesh, Noida."; %>
 <%- include('partials/_head', { meta_description: meta_description }) %>
 <%- include('partials/_header') %>
 
@@ -7,43 +7,48 @@
     <%- include('partials/_wizard', { wizardStep: 1 }) %>
     <header class="wiz-head">
       <p class="wiz-kicker">Step 1 of 3</p>
-      <h1>Choose sheet type</h1>
-      <p class="wiz-help">Pick the kind of sheet you need. Next you’ll choose the hole pattern, then the metal.</p>
+      <h1>Choose product type</h1>
+      <p class="wiz-help">Pick the product you need. Next you’ll choose the design, then the material.</p>
     </header>
 
-    <div class="wiz-grid">
-      <% if (!categories.length) { %>
-        <p class="wiz-help">Catalogue updating — call <%= site.phone %> for a quote.</p>
-      <% } %>
-      <% categories.forEach(function(c){ %>
-      <a href="/products/<%= c.slug %>" class="wiz-card">
-        <div class="wiz-card-media">
-          <% if (c.image) { %>
-            <img src="<%= c.image %>" alt="" width="480" height="360" loading="lazy">
-          <% } else { %>
-            <span class="wiz-card-fallback"><%= c.name %></span>
-          <% } %>
-        </div>
-        <div class="wiz-card-body">
-          <h2>
-            <%= c.name %>
-            <span class="pill pill-count"><%= c.design_count || 0 %> designs</span>
-          </h2>
-          <% if (c.materials && c.materials.length) { %>
-          <div class="wiz-mat-block">
-            <p class="wiz-mat-label">Material types</p>
-            <ul class="pill-row" aria-label="Material types">
-              <% c.materials.forEach(function(m){ %>
-              <li class="pill pill-mat"><%= m.name %></li>
-              <% }); %>
-            </ul>
+    <% const groupList = (typeof groups !== 'undefined' && groups && groups.length) ? groups : [{ key: 'all', label: '', categories: categories }]; %>
+    <% groupList.forEach(function(g){ %>
+    <section class="wiz-group">
+      <% if (g.label) { %><h2 class="wiz-group-title"><%= g.label %></h2><% } %>
+      <div class="wiz-grid">
+        <% if (!g.categories.length) { %>
+          <p class="wiz-help">Catalogue updating — call <%= site.phone %> for a quote.</p>
+        <% } %>
+        <% g.categories.forEach(function(c){ %>
+        <a href="/products/<%= c.slug %>" class="wiz-card">
+          <div class="wiz-card-media">
+            <% if (c.image) { %>
+              <img src="<%= c.image %>" alt="" width="480" height="360" loading="lazy">
+            <% } else { %>
+              <span class="wiz-card-fallback"><%= c.name %></span>
+            <% } %>
           </div>
-          <% } %>
-          <span class="wiz-card-cta">Select →</span>
-        </div>
-      </a>
-      <% }); %>
-    </div>
+          <div class="wiz-card-body">
+            <h2>
+              <%= c.name %>
+              <span class="pill pill-count"><%= c.design_count || 0 %> designs</span>
+            </h2>
+            <% if (c.materials && c.materials.length) { %>
+            <div class="wiz-mat-block">
+              <p class="wiz-mat-label">Material types</p>
+              <ul class="pill-row" aria-label="Material types">
+                <% c.materials.forEach(function(m){ %>
+                <li class="pill pill-mat"><%= m.name %></li>
+                <% }); %>
+              </ul>
+            </div>
+            <% } %>
+          </div>
+        </a>
+        <% }); %>
+      </div>
+    </section>
+    <% }); %>
   </div>
 </section>
 

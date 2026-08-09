@@ -6,8 +6,8 @@
 <nav class="wiz" aria-label="Product steps">
   <ol class="wiz-steps">
     <li class="wiz-step<%= step===1?' is-current':'' %><%= step>1?' is-done':'' %>">
-      <% if (step > 1) { %><a href="/products"><span class="wiz-num">1</span><span class="wiz-label">Sheet type</span></a>
-      <% } else { %><span class="wiz-num">1</span><span class="wiz-label">Sheet type</span><% } %>
+      <% if (step > 1) { %><a href="/products"><span class="wiz-num">1</span><span class="wiz-label">Product type</span></a>
+      <% } else { %><span class="wiz-num">1</span><span class="wiz-label">Product type</span><% } %>
     </li>
     <li class="wiz-step<%= step===2?' is-current':'' %><%= step>2?' is-done':'' %>">
       <% if (step > 2 && cat) { %><a href="/products/<%= cat.slug %>"><span class="wiz-num">2</span><span class="wiz-label">Design</span></a>
