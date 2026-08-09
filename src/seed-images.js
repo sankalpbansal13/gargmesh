@@ -4,6 +4,7 @@
  */
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const db = require('./db');
 const { designSlug } = require('./seed-data');
 
@@ -82,21 +83,32 @@ function ensureDir(dir) {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 }
 
-function copyIfNeeded(src, destName) {
+function copyIfNeeded(src, destName, force) {
   const dest = path.join(uploadsDir, destName);
   if (!fs.existsSync(src)) return null;
-  if (!fs.existsSync(dest)) {
+  const shouldForce = force || /^(1|true|yes)$/i.test(String(process.env.FORCE_STUDIO_COPY || ''));
+  if (!fs.existsSync(dest) || shouldForce) {
     fs.copyFileSync(src, dest);
   }
   return destName;
 }
 
+function fileMd5(absPath) {
+  try {
+    if (!absPath || !fs.existsSync(absPath)) return null;
+    return crypto.createHash('md5').update(fs.readFileSync(absPath)).digest('hex');
+  } catch (e) {
+    return null;
+  }
+}
+
 function ensureDesignImages() {
   ensureDir(uploadsDir);
-  const getDesign = db.prepare(
-    `SELECT d.id, d.name, d.slug FROM designs d
+  const getDesignsBySlug = db.prepare(
+    `SELECT d.id, d.name, d.slug, c.slug AS category_slug FROM designs d
      JOIN categories c ON c.id = d.category_id
-     WHERE c.slug = 'perforated-sheets' AND d.slug = ? AND d.deleted = 0`
+     WHERE c.deleted = 0 AND d.deleted = 0 AND d.slug = ?
+       AND (c.slug = 'perforated-sheets' OR c.slug LIKE 'perforated-%')`
   );
   const hasFile = db.prepare(
     'SELECT id FROM design_images WHERE design_id = ? AND filename = ?'
@@ -117,50 +129,56 @@ function ensureDesignImages() {
   let linked = 0;
   let copied = 0;
 
+  const matsForCategory = (catSlug) => {
+    if (catSlug === 'perforated-copper') return ['copper'];
+    if (catSlug === 'perforated-brass') return ['brass'];
+    if (catSlug === 'perforated-ms-gi-ss-al' || catSlug === 'perforated-sheets') {
+      return ['mild-steel', 'gi', 'stainless-steel', 'aluminium'];
+    }
+    return ['mild-steel', 'gi', 'stainless-steel', 'aluminium', 'copper', 'brass'];
+  };
+
   const tx = db.transaction(() => {
     for (let n = 1; n <= 29; n++) {
       const slug = designSlug(n);
-      const design = getDesign.get(slug);
-      if (!design) continue;
+      const designs = getDesignsBySlug.all(slug);
+      if (!designs.length) continue;
 
-      const jobs = [
-        { material: 'copper', src: path.join(copperDir, COPPER_BRASS[n]), dest: `perf-${String(n).padStart(2, '0')}-copper.png`, sort: 2, cover: false },
-        { material: 'brass', src: path.join(brassDir, COPPER_BRASS[n]), dest: `perf-${String(n).padStart(2, '0')}-brass.png`, sort: 3, cover: false },
-        { material: 'mild-steel', src: path.join(msDir, MS_FILES[n]), dest: `perf-${String(n).padStart(2, '0')}-ms.png`, sort: 1, cover: true }
-      ];
-
-      for (const job of jobs) {
+      // Copy source files once per pattern
+      const fileJobs = {
+        copper: { src: path.join(copperDir, COPPER_BRASS[n]), dest: `perf-${String(n).padStart(2, '0')}-copper.png` },
+        brass: { src: path.join(brassDir, COPPER_BRASS[n]), dest: `perf-${String(n).padStart(2, '0')}-brass.png` },
+        'mild-steel': { src: path.join(msDir, MS_FILES[n]), dest: `perf-${String(n).padStart(2, '0')}-ms.png` }
+      };
+      for (const job of Object.values(fileJobs)) {
         const before = fs.existsSync(path.join(uploadsDir, job.dest));
         const filename = copyIfNeeded(job.src, job.dest);
-        if (!filename) continue;
-        if (!before) copied++;
-        if (hasFile.get(design.id, filename)) continue;
-        const alt = `${design.name} — ${job.material} perforated sheet — Garg Industrial Mesh`;
-        insert.run(design.id, filename, '', alt, job.sort, 0, null, null, job.material);
-        linked++;
+        if (filename && !before) copied++;
       }
 
-      // Also reuse MS image for gi / stainless-steel / aluminium until dedicated renders exist
-      const msName = `perf-${String(n).padStart(2, '0')}-ms.png`;
-      if (fs.existsSync(path.join(uploadsDir, msName))) {
-        for (const mat of ['gi', 'stainless-steel', 'aluminium']) {
-          if (hasFile.get(design.id, msName) && db.prepare(
-            'SELECT id FROM design_images WHERE design_id = ? AND filename = ? AND material_slug = ?'
-          ).get(design.id, msName, mat)) continue;
-          // One row per material pointing at same file is OK for picker swap
-          const existsMat = db.prepare(
-            'SELECT id FROM design_images WHERE design_id = ? AND material_slug = ?'
-          ).get(design.id, mat);
-          if (existsMat) continue;
-          const alt = `${design.name} — ${mat} perforated sheet — Garg Industrial Mesh`;
-          insert.run(design.id, msName, '', alt, 1, 0, null, null, mat);
+      for (const design of designs) {
+        const allowed = matsForCategory(design.category_slug);
+        // One cover image per perforated design — same hole pattern in different
+        // metals should not create a multi-image blinker on cards/step 3.
+        const coverMat = allowed.includes('mild-steel')
+          ? 'mild-steel'
+          : allowed.includes('copper')
+            ? 'copper'
+            : allowed.includes('brass')
+              ? 'brass'
+              : allowed[0];
+        let coverName;
+        if (coverMat === 'copper') coverName = fileJobs.copper.dest;
+        else if (coverMat === 'brass') coverName = fileJobs.brass.dest;
+        else coverName = fileJobs['mild-steel'].dest;
+
+        // One image only — wipe material variants of the same hole pattern
+        db.prepare('DELETE FROM design_images WHERE design_id = ?').run(design.id);
+        if (fs.existsSync(path.join(uploadsDir, coverName))) {
+          const alt = `${design.name} — perforated sheet — Garg Industrial Mesh`;
+          insert.run(design.id, coverName, '', alt, 1, 1, null, null, coverMat);
           linked++;
         }
-      }
-
-      if (!hasCover.get(design.id).c && fs.existsSync(path.join(uploadsDir, msName))) {
-        clearCover.run(design.id);
-        setCover.run(design.id, msName);
       }
     }
   });
@@ -184,24 +202,34 @@ function ensureDesignImages() {
 }
 
 /**
+ * Categories that get a curated studio gallery. Source-folder dumps must not
+ * stack on top — that created near-identical multi-image blinkers.
+ */
+const STUDIO_OWNED_CATS = new Set([
+  'ss-welded-mesh',
+  'expanded-mesh',
+  'chain-link-mesh',
+  'door-machhar-jali',
+  'pvc-plastic-jali',
+  'bird-spikes',
+  'monkey-spikes',
+  'anti-bird-net'
+]);
+
+/**
  * Copy AI studio covers from assets/studio into uploads and set as design covers.
- * - SS welded: one unique cover per design
- * - Chain / Machhar / PVC / Bird: one shared cover for every design
- * - Expanded: front / back / light-through per design (front = cover)
+ * Each studio-owned category replaces its gallery (no leftover source duplicates).
+ * - Welded: one product shot + measure diagram (skip near-same SKU+shape pair)
+ * - Chain / Machhar / PVC / Monkey / Net: distinct studio pack only
+ * - Bird spikes: one material-specific cover
+ * - Expanded: front / back / light-through per design
  */
 function ensureStudioImages() {
   const studioRoot = path.join(root, 'assets', 'studio');
-  const hasFile = db.prepare(
-    'SELECT id FROM design_images WHERE design_id = ? AND filename = ?'
-  );
   const insert = db.prepare(
     `INSERT INTO design_images
      (design_id, filename, caption, alt_text, sort_order, is_cover, width, height, material_slug)
      VALUES (?,?,?,?,?,?,?,?,?)`
-  );
-  const clearCover = db.prepare('UPDATE design_images SET is_cover = 0 WHERE design_id = ?');
-  const setCover = db.prepare(
-    'UPDATE design_images SET is_cover = 1 WHERE design_id = ? AND filename = ?'
   );
   const getDesign = db.prepare(
     `SELECT d.id, d.name FROM designs d
@@ -213,57 +241,139 @@ function ensureStudioImages() {
      JOIN categories c ON c.id = d.category_id
      WHERE c.slug = ? AND d.deleted = 0`
   );
+  const clearDesignGallery = db.prepare('DELETE FROM design_images WHERE design_id = ?');
 
   let copied = 0;
   let linked = 0;
 
-  function linkCover(design, destName, alt, sortOrder, asCover) {
-    if (!fs.existsSync(path.join(uploadsDir, destName))) return;
-    if (!hasFile.get(design.id, destName)) {
-      insert.run(design.id, destName, '', alt, sortOrder, 0, null, null, null);
-      linked++;
-    }
-    if (asCover) {
-      clearCover.run(design.id);
-      setCover.run(design.id, destName);
+  function wipeCat(catSlug) {
+    for (const design of getDesignsInCat.all(catSlug)) {
+      clearDesignGallery.run(design.id);
     }
   }
 
-  // SS Welded Mesh 01–29
+  function addImage(design, destName, alt, sortOrder, asCover, seenHashes) {
+    const abs = path.join(uploadsDir, destName);
+    if (!fs.existsSync(abs)) return false;
+    const hash = fileMd5(abs);
+    if (hash && seenHashes) {
+      if (seenHashes.has(hash)) return false; // identical bytes — skip near/exact dup
+      seenHashes.add(hash);
+    }
+    insert.run(design.id, destName, '', alt, sortOrder, asCover ? 1 : 0, null, null, null);
+    linked++;
+    return true;
+  }
+
+  // Welded Mesh — one mesh photo + measure (shape OR per-SKU, never both — they look nearly identical)
+  wipeCat('ss-welded-mesh');
   const ssDir = path.join(studioRoot, 'ss-welded');
-  for (let n = 1; n <= 29; n++) {
-    const pad = String(n).padStart(2, '0');
-    const src = path.join(ssDir, `ss-welded-${pad}.png`);
-    const dest = `studio-ss-welded-${pad}.png`;
-    const before = fs.existsSync(path.join(uploadsDir, dest));
-    const name = copyIfNeeded(src, dest);
-    if (name && !before) copied++;
-    const design = getDesign.get('ss-welded-mesh', `ss-welded-${pad}`);
-    if (design && name) {
-      linkCover(design, dest, `${design.name} — studio — Garg Industrial Mesh`, 0, true);
+  const squareDest = 'studio-welded-square.png';
+  const rectDest = 'studio-welded-rect.png';
+  const measureDest = 'studio-welded-measure.png';
+  [
+    ['welded-square.png', squareDest],
+    ['welded-rect.png', rectDest],
+    ['welded-measure.png', measureDest]
+  ].forEach(([file, dest]) => {
+    const src = path.join(ssDir, file);
+    if (copyIfNeeded(src, dest, true)) copied++;
+  });
+  for (const design of getDesignsInCat.all('ss-welded-mesh')) {
+    const seen = new Set();
+    const shapeRow = db.prepare('SELECT hole_shape FROM designs WHERE id = ?').get(design.id);
+    const isRect = shapeRow && /rect/i.test(shapeRow.hole_shape || '');
+    const shapeFile = isRect ? rectDest : squareDest;
+    const pad = (design.slug.match(/(\d+)$/) || [])[1];
+    let coverFile = shapeFile;
+    if (pad) {
+      const src = path.join(ssDir, `ss-welded-${pad}.png`);
+      const dest = `studio-ss-welded-${pad}.png`;
+      if (copyIfNeeded(src, dest, true)) copied++;
+      if (fs.existsSync(path.join(uploadsDir, dest))) coverFile = dest;
+    }
+    addImage(
+      design,
+      coverFile,
+      `${design.name} — ${isRect ? 'rectangular' : 'square'} — Garg Industrial Mesh`,
+      1,
+      true,
+      seen
+    );
+    addImage(design, measureDest, `${design.name} — how to measure — Garg Industrial Mesh`, 2, false, seen);
+  }
+
+  // Replace gallery with curated studio pack (distinct views only)
+  function linkPack(catSlug, files) {
+    wipeCat(catSlug);
+    for (const design of getDesignsInCat.all(catSlug)) {
+      const seen = new Set();
+      let sort = 1;
+      let coverSet = false;
+      files.forEach((f) => {
+        const src = path.isAbsolute(f.src) ? f.src : path.join(studioRoot, f.src);
+        const dest = f.dest;
+        if (copyIfNeeded(src, dest, true)) copied++;
+        const ok = addImage(
+          design,
+          dest,
+          `${design.name} — studio — Garg Industrial Mesh`,
+          sort,
+          !coverSet,
+          seen
+        );
+        if (ok) {
+          coverSet = true;
+          sort++;
+        }
+      });
     }
   }
 
-  // Shared one-image categories
-  const shared = [
-    { cat: 'chain-link-mesh', file: 'chain-link-shared.png', dest: 'studio-chain-link-shared.png' },
-    { cat: 'door-machhar-jali', file: 'machhar-shared.png', dest: 'studio-machhar-shared.png' },
-    { cat: 'pvc-plastic-jali', file: 'pvc-shared.png', dest: 'studio-pvc-shared.png' },
-    { cat: 'bird-monkey-spikes', file: 'bird-spikes-shared.png', dest: 'studio-bird-spikes-shared.png' }
-  ];
-  const sharedDir = path.join(studioRoot, 'shared');
-  for (const job of shared) {
-    const src = path.join(sharedDir, job.file);
-    const before = fs.existsSync(path.join(uploadsDir, job.dest));
-    const name = copyIfNeeded(src, job.dest);
-    if (name && !before) copied++;
-    if (!name) continue;
-    for (const design of getDesignsInCat.all(job.cat)) {
-      linkCover(design, job.dest, `${design.name} — studio — Garg Industrial Mesh`, 0, true);
-    }
-  }
+  linkPack('chain-link-mesh', [
+    { src: 'shared/chain-link-shared.png', dest: 'studio-chain-link-shared.png' },
+    { src: 'shared/chain-link-sizes.png', dest: 'studio-chain-link-sizes.png' },
+    { src: 'shared/chain-link-roll.png', dest: 'studio-chain-link-roll.png' }
+  ]);
+  linkPack('door-machhar-jali', [
+    { src: 'shared/machhar-shared.png', dest: 'studio-machhar-shared.png' },
+    { src: 'shared/machhar-rolls.png', dest: 'studio-machhar-rolls.png' },
+    { src: 'shared/machhar-weave.png', dest: 'studio-machhar-weave.png' },
+    { src: 'shared/machhar-cartons.png', dest: 'studio-machhar-cartons.png' }
+  ]);
+  linkPack('pvc-plastic-jali', [
+    { src: 'shared/pvc-closeup.png', dest: 'studio-pvc-closeup.png' },
+    { src: 'shared/pvc-rolls.png', dest: 'studio-pvc-rolls.png' },
+    { src: 'shared/pvc-hero-rolls.png', dest: 'studio-pvc-hero-rolls.png' },
+    { src: 'shared/pvc-construction.png', dest: 'studio-pvc-construction.png' },
+    { src: 'shared/pvc-tree-guard.png', dest: 'studio-pvc-tree-guard.png' },
+    { src: 'shared/pvc-rain-fence.png', dest: 'studio-pvc-rain-fence.png' },
+    { src: 'shared/pvc-garden.png', dest: 'studio-pvc-garden.png' }
+  ]);
 
-  // Expanded mesh — 3 views per design
+  // Bird spikes — one material-specific cover (no shared balcony dumps)
+  wipeCat('bird-spikes');
+  [
+    ['polycarbonate-bird-spikes', 'shared/bird-spikes-pc.png', 'studio-bird-spikes-pc.png'],
+    ['ss-304-bird-spikes', 'shared/bird-spikes-ss.png', 'studio-bird-spikes-ss.png']
+  ].forEach(([slug, srcRel, dest]) => {
+    const src = path.join(studioRoot, srcRel);
+    if (copyIfNeeded(src, dest, true)) copied++;
+    const design = getDesign.get('bird-spikes', slug);
+    if (design) addImage(design, dest, `${design.name} — studio — Garg Industrial Mesh`, 1, true, new Set());
+  });
+
+  linkPack('monkey-spikes', [
+    { src: 'shared/monkey-spikes-pc.png', dest: 'studio-monkey-spikes-pc.png' },
+    { src: 'shared/monkey-spikes-installed.png', dest: 'studio-monkey-spikes-installed.png' }
+  ]);
+  linkPack('anti-bird-net', [
+    { src: 'shared/bird-net-balcony.png', dest: 'studio-bird-net-balcony.png' },
+    { src: 'shared/bird-net-view.png', dest: 'studio-bird-net-view.png' }
+  ]);
+
+  // Expanded mesh — 3 distinct views per design
+  wipeCat('expanded-mesh');
   const expDir = path.join(studioRoot, 'expanded');
   const views = [
     { key: 'front', sort: 1, cover: true },
@@ -271,21 +381,13 @@ function ensureStudioImages() {
     { key: 'light-through', sort: 3, cover: false }
   ];
   for (const design of getDesignsInCat.all('expanded-mesh')) {
+    const seen = new Set();
     for (const v of views) {
       const srcName = `${design.slug}-${v.key}.png`;
       const dest = `studio-expanded-${design.slug}-${v.key}.png`;
       const src = path.join(expDir, srcName);
-      const before = fs.existsSync(path.join(uploadsDir, dest));
-      const name = copyIfNeeded(src, dest);
-      if (name && !before) copied++;
-      if (!name) continue;
-      linkCover(
-        design,
-        dest,
-        `${design.name} — ${v.key} — Garg Industrial Mesh`,
-        v.sort,
-        v.cover
-      );
+      if (copyIfNeeded(src, dest, true)) copied++;
+      addImage(design, dest, `${design.name} — ${v.key} — Garg Industrial Mesh`, v.sort, v.cover, seen);
     }
   }
 
@@ -321,6 +423,10 @@ function ensureSourceCategoryImages() {
   let linked = 0;
 
   for (const cat of extraCategories()) {
+    // Studio-owned categories get a curated gallery later — do not dump shared
+    // source photos onto every design (causes near-same blinkers).
+    if (STUDIO_OWNED_CATS.has(cat.slug)) continue;
+
     const folder = cat.content_folder;
     if (!folder) continue;
     const imgDir = path.join(root, 'source', folder, 'images');
@@ -346,17 +452,10 @@ function ensureSourceCategoryImages() {
     for (const d of cat.designs) {
       const design = getDesign.get(cat.slug, d.slug);
       if (!design) continue;
+      // One cover only — shared gallery dumps of the same product look nearly identical
       if (!hasFile.get(design.id, coverName)) {
         const matSlug = (d.materials && d.materials[0] && d.materials[0].slug) || null;
         insert.run(design.id, coverName, '', design.name + ' — Garg Industrial Mesh', 1, 0, null, null, matSlug);
-        linked++;
-      }
-      // Attach a few more gallery images (shared) for picker variety
-      let sort = 2;
-      for (const fname of copiedNames.slice(0, 4)) {
-        if (fname === coverName) continue;
-        if (hasFile.get(design.id, fname)) continue;
-        insert.run(design.id, fname, '', design.name + ' — Garg Industrial Mesh', sort++, 0, null, null, null);
         linked++;
       }
       if (!hasCover.get(design.id).c) {
