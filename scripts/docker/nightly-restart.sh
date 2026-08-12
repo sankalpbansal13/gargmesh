@@ -39,7 +39,6 @@ if ! command -v docker >/dev/null 2>&1; then
 fi
 echo "OK: $(command -v docker)"
 docker version --format 'Client={{.Client.Version}} Server={{.Server.Version}}' || docker version
-
 step "3/6 git fetch + pull"
 if [[ -d .git ]]; then
   echo "Remote:"
@@ -50,6 +49,7 @@ if [[ -d .git ]]; then
   REMOTE_REF="origin/${BRANCH}"
   if ! git rev-parse --verify "$REMOTE_REF" >/dev/null 2>&1; then
     REMOTE_REF="origin/main"
+    BRANCH="main"
   fi
   echo "Branch=$BRANCH RemoteRef=$REMOTE_REF"
   echo "Status before pull:"
@@ -65,8 +65,8 @@ if [[ -d .git ]]; then
   fi
 
   echo "Pulling $REMOTE_REF (ff-only)…"
-  if git pull --ff-only "$REMOTE_REF"; then
-    echo "Pulled $REMOTE_REF OK"
+  if git pull --ff-only origin "$BRANCH"; then
+    echo "Pulled origin/$BRANCH OK"
   elif git merge --ff-only "$REMOTE_REF"; then
     echo "Merged $REMOTE_REF OK"
   else
