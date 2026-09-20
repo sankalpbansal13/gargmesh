@@ -1,0 +1,19 @@
+[Unit]
+Description=Cloudflare Tunnel for Garg Industrial Mesh
+After=network-online.target gargmesh.service
+Wants=network-online.target
+Requires=gargmesh.service
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+EnvironmentFile=/home/ubuntu/garg_industrial/.env.prod
+ExecStart=/usr/local/bin/cloudflared tunnel --no-autoupdate run
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
