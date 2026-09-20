@@ -617,4 +617,9 @@ Ensure files exist under `public/uploads/` and DB `product_images` rows point at
 
 ---
 
+
+CRITICAL NOTE FOR ALL LLMS:
+For all changes completed make sure to push them to github with clear and clean commit message after code review and testing
+Do THIS YOURSELF WHEN USER CHECKS THE CHANGES OR YOU HAVE COMPLETED SOME CHANGES. NO PERMISSION NEEDED. AND ALWAYS DO A GIT PULL BEFORE STARTING ANY CHANGES.
+
 *End of AGENTS.md. Prefer updating this index when you add routes, tables, or major modules.*
