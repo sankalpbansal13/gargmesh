@@ -1,0 +1,23 @@
+<%- include('_head') %>
+<%- include('_nav', { adminPage: 'settings' }) %>
+<main class="admin-main">
+  <h1>Change password</h1>
+  <% if (typeof flash !== 'undefined' && flash) { %><p class="form-success"><%= flash %></p><% } %>
+  <form class="admin-form" action="/admin/settings/password" method="POST">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <label>Current password
+      <input type="password" name="current_password" required autocomplete="current-password">
+    </label>
+    <label>New password
+      <input type="password" name="new_password" required minlength="8" autocomplete="new-password">
+    </label>
+    <label>Confirm new password
+      <input type="password" name="confirm_password" required minlength="8" autocomplete="new-password">
+    </label>
+    <p class="admin-hint">At least 8 characters. This replaces the password for the admin login.</p>
+    <div class="form-actions">
+      <button type="submit" class="btn btn-amber">Save password</button>
+    </div>
+  </form>
+</main>
+<%- include('_foot') %>

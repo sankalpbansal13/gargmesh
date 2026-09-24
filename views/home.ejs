@@ -143,6 +143,20 @@ const showTypes = (typeof featured !== 'undefined' && featured.length) ? feature
       <a href="/areas/faridabad" class="area-link">Faridabad</a>
       <a href="/areas/gurugram" class="area-link">Gurugram</a>
     </div>
+    <% if (typeof localityGroups !== 'undefined' && localityGroups) { %>
+      <% localityGroups.forEach(function(g){ %>
+      <h3 class="post-h2" style="margin:var(--sp-6) 0 var(--sp-4)"><a href="/areas/<%= g.citySlug %>" style="color:inherit;text-decoration:none"><%= g.city %></a></h3>
+      <div class="areas-grid reveal-stagger">
+        <% g.localities.forEach(function(s){ %>
+        <a href="/sectors/<%= s.slug %>" class="area-card">
+          <span class="area-ico"><%- include('partials/_icon', {name:'map-pin', size:24}) %></span>
+          <strong><%= s.locality || s.sector %></strong>
+          <span class="area-sub">Wire mesh supplier in <%= s.locality || s.sector %>, <%= s.city %></span>
+        </a>
+        <% }); %>
+      </div>
+      <% }); %>
+    <% } %>
   </div>
 </section>
 

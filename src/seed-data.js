@@ -213,9 +213,16 @@ const GUIDE_SECTIONS = [
   }
 ];
 
-const { allExtraMaterials, CATEGORY_GROUPS } = require('./catalog');
+const { extraCategories, allExtraMaterials, CATEGORY_GROUPS } = require('./catalog');
 
-function materialBySlug(slug) {
+function materialBySlug(slug, categorySlug) {
+  if (categorySlug) {
+    const cat = extraCategories().find((c) => c.slug === categorySlug);
+    if (cat && cat.materials_catalog) {
+      const hit = cat.materials_catalog.find((m) => m.slug === slug);
+      if (hit) return hit;
+    }
+  }
   const fromPerf = MATERIALS.find((m) => m.slug === slug);
   if (fromPerf) return fromPerf;
   return allExtraMaterials()[slug] || null;
@@ -230,14 +237,6 @@ function perforatedMaterialsPlain(catSlug) {
   return 'MS, GI, SS, aluminium, copper and brass';
 }
 
-function parseWeightGSqft(design) {
-  if (design.weight_g_sqft != null && !Number.isNaN(Number(design.weight_g_sqft))) {
-    return Number(design.weight_g_sqft);
-  }
-  const m = String(design.short_desc || '').match(/~([\d.]+)\s*g\/sqft/i);
-  return m ? Number(m[1]) : null;
-}
-
 /** Computed technicals for a design row (DB or seed shape). */
 function buildDesignTech(design, category) {
   const catSlug = (category && category.slug) || design.category_slug || '';
@@ -247,34 +246,28 @@ function buildDesignTech(design, category) {
   const oa = Number(design.open_area_pct);
   const shape = design.hole_shape || '';
 
-  if (catSlug === 'ss-welded-mesh') {
-    const openB = Number(design.angle_deg);
-    const openingDd = hole
-      ? (openB && openB !== hole ? `${hole} × ${openB} mm` : `${hole} × ${hole} mm`)
-      : 'See SKU';
-    const weight = parseWeightGSqft(design);
-    const giWeight = weight != null ? Math.round(weight * 1.05) : null;
-    const rows = [
-      { dt: 'Opening', dd: openingDd },
-      { dt: 'Wire', dd: pitch ? `${pitch} mm` : 'See SKU / SWG' },
-      { dt: 'Form', dd: 'Rolls & panels' },
-      { dt: 'Grades', dd: 'SS 304 / SS 201 / MS / GI' }
-    ];
-    if (weight != null) {
-      rows.push({ dt: 'Weight (SS/MS)', dd: `≈ ${weight} g/sqft` });
-      rows.push({ dt: 'Weight (GI)', dd: `≈ ${giWeight} g/sqft (approx — confirm on quote)` });
-    }
-    rows.push({ dt: 'SKU', dd: design.short_desc || design.name });
+  if (catSlug === 'ss-welded-mesh' || catSlug === 'powder-coated-welded-mesh') {
+    const coated = catSlug === 'powder-coated-welded-mesh';
     return {
       kind: 'welded',
       family: shape || 'Welded',
-      holeLabel: hole ? `${hole} mm` : 'See SKU',
-      bridge_mm: pitch || null,
-      orientation: 'Welded intersections — confirm clear opening vs pitch on RFQ.',
-      maxThicknessTip: 'State roll (e.g. 4′×50′) or panel size, material/grade (SS 304/201, MS, GI), and wire mm/SWG.',
+      holeLabel: design.name,
+      bridge_mm: null,
+      orientation: coated
+        ? 'Same five openings as plain welded mesh, on a mild steel base.'
+        : 'Five stock openings. Usual rolls are 3, 4 and 5 ft.',
+      maxThicknessTip: coated
+        ? 'Colours: dark green, light green, black, blue, grey. Other colours on request.'
+        : 'Metals: MS, GI, SS 304 and SS 201. Usual rolls 3, 4 and 5 ft. Specials on order.',
       oa_note: design.short_desc || '',
       plain: design.description || design.short_desc || design.name,
-      rows
+      rows: [
+        { dt: 'Spec', dd: design.short_desc || design.name },
+        { dt: 'Rolls', dd: '3 / 4 / 5 ft usual' },
+        coated
+          ? { dt: 'Colours', dd: 'Dark green, light green, black, blue, grey. Others on request.' }
+          : { dt: 'Metals', dd: 'MS / GI / SS 304 / SS 201' }
+      ]
     };
   }
   if (catSlug === 'expanded-mesh') {
@@ -308,36 +301,75 @@ function buildDesignTech(design, category) {
     return {
       kind: 'chain-link',
       family: 'Diamond',
-      holeLabel: hole ? `${hole} mm clear` : 'Box opening',
+      holeLabel: hole === 50 ? '2″ clear' : hole === 75 ? '3″ clear' : hole === 100 ? '4″ clear' : (hole ? `${hole} mm clear` : 'Box opening'),
       bridge_mm: null,
       orientation: 'Box = clear inside opening of the diamond, not centre-to-centre.',
-      maxThicknessTip: 'Heights 3–10 ft · wire 2.5 / 3 / 4 mm · 50 ft rolls — state all on RFQ.',
+      maxThicknessTip: 'Heights 3 to 12 ft including 3.5 and 4.5 · wire 2.5 / 3 / 4 mm · 50 ft rolls. GI or PVC powder coated.',
       oa_note: design.short_desc || '',
       plain: design.description || design.short_desc,
       rows: [
-        { dt: 'Box (clear)', dd: hole ? `${hole} mm` : '—' },
-        { dt: 'Heights', dd: '3–10 ft' },
+        { dt: 'Box (clear)', dd: hole === 50 ? '2″ (50 mm)' : hole === 75 ? '3″ (75 mm)' : hole === 100 ? '4″ (100 mm)' : (hole ? `${hole} mm` : '—') },
+        { dt: 'Heights', dd: '3, 3.5, 4, 4.5, 5, 6, 7, 8, 9, 10, 11, 12 ft' },
         { dt: 'Wire', dd: '2.5 / 3 / 4 mm' },
-        { dt: 'Roll', dd: '50 ft standard' }
+        { dt: 'Roll', dd: '50 ft' },
+        { dt: 'Material', dd: 'GI or PVC powder coated' },
+        { dt: 'PVC colours', dd: 'Dark green, light green, black, blue, grey. Others on request.' }
       ]
     };
   }
   if (catSlug === 'door-machhar-jali') {
-    const meshFromShort = (design.short_desc || '').match(/^(\d+×\d+)/);
-    const meshLabel = meshFromShort ? meshFromShort[1] : design.name;
     return {
       kind: 'machhar',
       family: 'Woven mesh',
-      holeLabel: meshLabel,
+      holeLabel: '14×14',
       bridge_mm: null,
-      orientation: 'Woven mosquito / door mesh — confirm mesh count and roll width.',
-      maxThicknessTip: 'Roll widths typically 2–6 ft including half-foot sizes.',
+      orientation: 'Woven door machhar jali. SS 304 is supplied in rolls with a grade sticker.',
+      maxThicknessTip: 'Widths 2, 2.5, 3, 3.5, 4 and 5 ft.',
       oa_note: design.short_desc || '',
       plain: design.description || design.short_desc,
       rows: [
-        { dt: 'Mesh count', dd: meshLabel },
-        { dt: 'Widths', dd: '2–6 ft (incl. half-feet)' },
-        { dt: 'Materials', dd: 'Aluminium / SS 304 / SS 202' }
+        { dt: 'Mesh count', dd: '14×14' },
+        { dt: 'Widths', dd: '2 / 2.5 / 3 / 3.5 / 4 / 5 ft' },
+        { dt: 'Materials', dd: 'GI / Aluminium / SS 304 / SS 201 / SS 202' }
+      ]
+    };
+  }
+  if (catSlug === 'fine-mesh') {
+    return {
+      kind: 'fine-mesh',
+      family: 'Woven wire cloth',
+      holeLabel: design.name,
+      bridge_mm: null,
+      orientation: 'Mesh count × wire SWG. Woven cloth for sifters and filters, not a punched mill screen.',
+      maxThicknessTip: 'Rolls 3 ft and 4 ft. Other widths on order. Wire millimetres for these fine SWG sizes are confirmed on the RFQ.',
+      oa_note: design.short_desc || '',
+      plain: design.description || design.short_desc,
+      rows: [
+        { dt: 'Count', dd: design.name.replace('Fine mesh ', '') + ' (mesh × SWG)' },
+        { dt: 'Also called', dd: 'SS 304 wire cloth, brass wire mesh, copper wire mesh, sifter jali, filter cloth' },
+        { dt: 'Metals', dd: 'SS 304, brass, copper, GI, MS' },
+        { dt: 'Rolls', dd: '3 ft and 4 ft' }
+      ]
+    };
+  }
+  if (catSlug === 'number-perforated') {
+    const hole = design.hole_mm;
+    const holeText = hole == null ? '—' : (hole < 1 ? hole.toFixed(2) : String(hole)) + ' mm';
+    const micro = hole != null && hole <= 1.5;
+    return {
+      kind: 'mill',
+      family: 'Round-hole mill sheet',
+      holeLabel: design.name + ' · ' + holeText,
+      bridge_mm: null,
+      orientation: 'Ordered by hole number. Flat perforated sheet for mill hoppers and chambers, not woven channi cloth.',
+      maxThicknessTip: 'Tell us plate size and thickness with the hole number. Thickness is confirmed on the RFQ.',
+      oa_note: design.short_desc || '',
+      plain: design.description || design.short_desc,
+      rows: [
+        { dt: 'Hole number', dd: design.name },
+        { dt: 'Hole size', dd: holeText },
+        { dt: 'Also called', dd: micro ? 'Micro hole perforated, hopper mesh, fine mill jali' : 'Hopper mesh, rice mill jali, mill screen' },
+        { dt: 'Metals', dd: 'SS 304, brass, copper' }
       ]
     };
   }
@@ -346,7 +378,14 @@ function buildDesignTech(design, category) {
     catSlug === 'bird-monkey-spikes' ||
     catSlug === 'bird-spikes' ||
     catSlug === 'monkey-spikes' ||
-    catSlug === 'anti-bird-net'
+    catSlug === 'anti-bird-net' ||
+    catSlug === 'barbed-wire' ||
+    catSlug === 'acoustic-perforated' ||
+    catSlug === 'pop-plaster-jali' ||
+    catSlug === 'fiber-mesh' ||
+    catSlug === 'binding-wire' ||
+    catSlug === 'construction-net' ||
+    catSlug === 'chicken-mesh'
   ) {
     return {
       kind: 'simple',

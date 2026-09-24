@@ -13,7 +13,7 @@ const db = require('./db');
 const { run: seedRun } = require('./seed');
 const { requireAuth } = require('./middleware/auth');
 const { listPosts, findBySlug: findBlogPost } = require('./posts');
-const { findByName: findCity } = require('./city-data');
+const { findByName: findCity, cities: cityCatalog } = require('./city-data');
 const { sectors: sectorList, findBySlug: findSector, byCity: localitiesByCity, groupedByCity, relatedLocalities } = require('./sector-data');
 const { safeRedirectPath } = require('./safe-redirect');
 const { createSqliteSessionStore } = require('./session-store');
@@ -421,6 +421,7 @@ app.get('/', (req, res) => {
   res.render('home', {
     title: 'Industrial Wire Mesh & Perforated Sheets Supplier in Noida | Garg Industrial Mesh',
     products: featuredTypes, featured: featuredTypes, categories, page: 'home',
+    localityGroups: groupedByCity(),
     sent: req.query.sent === '1'
   });
 });
@@ -513,7 +514,13 @@ app.get('/products/:categorySlug/:designSlug', (req, res) => {
   const design = db.prepare(
     'SELECT * FROM designs WHERE category_id = ? AND slug = ? AND deleted = 0'
   ).get(category.id, req.params.designSlug);
-  if (!design) return res.status(404).render('404', { title: 'Design Not Found' });
+  if (!design) {
+    const retired = db.prepare(
+      'SELECT id FROM designs WHERE category_id = ? AND slug = ? AND deleted = 1'
+    ).get(category.id, req.params.designSlug);
+    if (retired) return res.redirect(301, '/products/' + category.slug);
+    return res.status(404).render('404', { title: 'Design Not Found' });
+  }
 
   const materials = db.prepare(
     'SELECT * FROM design_materials WHERE design_id = ? AND deleted = 0 ORDER BY sort_order ASC, name ASC'
@@ -532,7 +539,7 @@ app.get('/products/:categorySlug/:designSlug', (req, res) => {
 
   const label = selected ? `${design.name} — ${selected.name}` : design.name;
   const tech = buildDesignTech(design, category);
-  const materialInfo = selected ? (materialBySlug(selected.slug) || selected) : null;
+  const materialInfo = selected ? (materialBySlug(selected.slug, category.slug) || selected) : null;
   const faqs = faqsForDesign(design);
   let guideSections = [];
   try { guideSections = category.guide_sections ? JSON.parse(category.guide_sections) : []; } catch (e) { guideSections = []; }
@@ -555,7 +562,7 @@ app.get('/products/:categorySlug/:designSlug', (req, res) => {
 });
 
 app.get('/areas', (req, res) => {
-  const cities = ['Noida', 'Greater Noida', 'Delhi', 'Ghaziabad', 'Faridabad', 'Gurugram'];
+  const cities = Object.keys(cityCatalog);
   res.render('areas', {
     title: 'Areas We Serve — Noida, Greater Noida, Delhi NCR | Garg Industrial Mesh',
     cities,
@@ -572,12 +579,9 @@ app.get('/areas/:city', (req, res) => {
       return name ? findCity(name) : null;
     })();
   if (!cityData) return res.status(404).render('404', { title: 'Area Not Found' });
-  const products = attachDesignCovers(db.prepare(`
-    SELECT d.*, c.slug AS category_slug, c.name AS category_name
-    FROM designs d JOIN categories c ON c.id = d.category_id
-    WHERE d.deleted = 0 AND c.deleted = 0
-    ORDER BY d.featured DESC, d.sort_order ASC LIMIT 8
-  `).all());
+  const categories = enrichCategories(db.prepare(
+    'SELECT * FROM categories WHERE deleted = 0 ORDER BY sort_order ASC, name ASC'
+  ).all());
   const localities = localitiesByCity(cityData.slug);
   const city = cityData.slug === 'greater-noida' ? 'Greater Noida' : (cityData.slug.charAt(0).toUpperCase()+cityData.slug.slice(1));
   const breadcrumb = {
@@ -599,8 +603,8 @@ app.get('/areas/:city', (req, res) => {
   res.locals.waText = `Hi Garg Industrial Mesh, I need wire mesh in ${city}. Please share price & availability.`;
   res.render('area', {
     title: `Wire Mesh & Perforated Sheet Supplier in ${city} | Garg Industrial Mesh`,
-    meta_description: `Wire mesh, perforated sheet, welded mesh, chain link fence, bird & monkey spikes supplier in ${city}. Garg Industrial Mesh delivers across ${city} and Delhi NCR. Get a quote.`,
-    city, cityData, products, localities, extraLd, page: 'area',
+    meta_description: `Construction net (3 m × 50 m, 50/75/90 GSM), chicken mesh and POP jali in ${city}, plus wire mesh and perforated sheet. Garg Industrial Mesh, Sector 9 Noida. Call 9910238277.`,
+    city, cityData, categories, localities, extraLd, page: 'area',
     sent: req.query.sent === '1'
   });
 });
@@ -608,13 +612,9 @@ app.get('/areas/:city', (req, res) => {
 app.get('/sectors/:slug', (req, res) => {
   const sector = findSector(req.params.slug);
   if (!sector) return res.status(404).render('404', { title: 'Locality Not Found' });
-  const allProducts = attachDesignCovers(db.prepare(`
-    SELECT d.*, c.slug AS category_slug, c.name AS category_name
-    FROM designs d JOIN categories c ON c.id = d.category_id
-    WHERE d.deleted = 0 AND c.deleted = 0
-    ORDER BY d.featured DESC, d.sort_order ASC LIMIT 8
-  `).all());
-  const fallback = allProducts.slice(0, 4);
+  const categories = enrichCategories(db.prepare(
+    'SELECT * FROM categories WHERE deleted = 0 ORDER BY sort_order ASC, name ASC'
+  ).all());
   const related = relatedLocalities(sector);
   const locName = sector.locality || sector.sector;
   const breadcrumb = {
@@ -640,7 +640,7 @@ app.get('/sectors/:slug', (req, res) => {
   res.render('sector', {
     title: sector.title + ' | Garg Industrial Mesh',
     meta_description: metaDesc.length > 155 ? metaDesc.slice(0, 152) + '…' : metaDesc,
-    sector, products: fallback, related, extraLd, page: 'sector',
+    sector, categories, related, extraLd, page: 'sector',
     sent: req.query.sent === '1'
   });
 });
@@ -759,29 +759,30 @@ app.get('/sitemap.xml', (req, res) => {
     FROM designs d JOIN categories c ON c.id = d.category_id
     WHERE d.deleted = 0 AND c.deleted = 0
   `).all();
-  const cities = ['noida', 'greater-noida', 'delhi', 'ghaziabad', 'faridabad', 'gurugram'];
+  const citySlugs = Object.values(cityCatalog).map((c) => c.slug);
   const sectorSlugs = sectorList.map(s => s.slug);
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   let xml = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
   const staticPages = ['', '/products', '/areas', '/about', '/contact', '/blog'];
   staticPages.forEach(p => {
-    xml += `  <url><loc>${base}${p}</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>\n`;
+    xml += `  <url><loc>${esc(base + p)}</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>\n`;
   });
   try {
     listPosts({ includeDeleted: false }).forEach(p => {
-      xml += `  <url><loc>${base}/blog/${p.slug}</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>\n`;
+      xml += `  <url><loc>${esc(base + '/blog/' + p.slug)}</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>\n`;
     });
   } catch (e) {}
   categories.forEach(c => {
-    xml += `  <url><loc>${base}/products/${c.slug}</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>\n`;
+    xml += `  <url><loc>${esc(base + '/products/' + c.slug)}</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>\n`;
   });
   designs.forEach(d => {
-    xml += `  <url><loc>${base}/products/${d.category_slug}/${d.design_slug}</loc><changefreq>weekly</changefreq><priority>0.85</priority></url>\n`;
+    xml += `  <url><loc>${esc(base + '/products/' + d.category_slug + '/' + d.design_slug)}</loc><changefreq>weekly</changefreq><priority>0.85</priority></url>\n`;
   });
-  cities.forEach(c => {
-    xml += `  <url><loc>${base}/areas/${c}</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>\n`;
+  citySlugs.forEach(c => {
+    xml += `  <url><loc>${esc(base + '/areas/' + c)}</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>\n`;
   });
   sectorSlugs.forEach(s => {
-    xml += `  <url><loc>${base}/sectors/${s}</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>\n`;
+    xml += `  <url><loc>${esc(base + '/sectors/' + s)}</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>\n`;
   });
   xml += '</urlset>';
   res.send(xml);

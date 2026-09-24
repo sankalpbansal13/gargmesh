@@ -110,7 +110,7 @@ const sectors = [
     related: ['sector-12-noida', 'sector-18-noida', 'sector-62-noida'],
     faq: [
       { q: "Do you deliver MS welded mesh to Sector 2 workshops?", a: "Yes. We supply MS welded mesh for slabs, screens and fabrication to Sector 2 workshops with same-day dispatch on in-stock sizes." },
-      { q: "Can I get construction safety net for a Sector 2 site?", a: "Yes. Our UV-stabilised HDPE construction net is supplied to Sector 2 building sites for debris and fall protection." }
+      { q: "Can I get construction safety net for a Sector 2 site?", a: "Yes. Construction net for Sector 2 is a 3 m × 50 m roll in 50, 75 or 90 GSM. Pick the GSM for the coverage you need." }
     ]
   },
 
@@ -129,7 +129,7 @@ const sectors = [
     products: ['Bird Mesh', 'Construction Net', 'Chain Link Fence', 'Aluminium Door Mesh'],
     related: ['pari-chowk-greater-noida', 'alpha-greater-noida', 'beta-greater-noida'],
     faq: [
-      { q: "Do you supply construction net for Knowledge Park building sites?", a: "Yes. Our UV-stabilised HDPE construction net is regularly supplied to Knowledge Park high-rise and campus projects for debris and fall protection." },
+      { q: "Do you supply construction net for Knowledge Park building sites?", a: "Yes. Knowledge Park sites get construction net in 3 m × 50 m rolls, 50, 75 or 90 GSM, chosen for the coverage." },
       { q: "Can colleges get bird mesh for hostel balconies in Knowledge Park?", a: "Yes. We supply UV-stabilised nylon and PVC bird mesh cut to balcony size for Knowledge Park hostels and faculty housing." },
       { q: "Is chain link fencing available for Knowledge Park plot boundaries?", a: "Yes. GI and PVC-coated chain link in 3.5ft–5ft heights ship quickly for Knowledge Park institutional plot fencing." }
     ]
@@ -185,7 +185,7 @@ const sectors = [
     related: ['beta-greater-noida', 'delta-greater-noida', 'chi-phi-greater-noida'],
     faq: [
       { q: "Do you supply chain link fence for Gamma plot boundaries?", a: "Yes. GI and PVC-coated chain link in standard heights is available for Gamma plots, with per-running-foot pricing on WhatsApp." },
-      { q: "Is construction net available for Gamma high-rise sites?", a: "Yes. UV-stabilised HDPE construction net is supplied to Gamma building sites for debris containment and edge protection." }
+      { q: "Is construction net available for Gamma high-rise sites?", a: "Yes. Gamma sites get construction net in 3 m × 50 m rolls, 50, 75 or 90 GSM, chosen for the coverage." }
     ]
   },
   {
@@ -258,7 +258,7 @@ const sectors = [
     related: ['pari-chowk-greater-noida', 'sector-68-noida', 'alpha-greater-noida'],
     faq: [
       { q: "Do you deliver to Greater Noida West / Noida Extension high-rises?", a: "Yes. Greater Noida West is a priority residential delivery zone. In-stock bird mesh and monkey spikes often ship the same day." },
-      { q: "Can builders get construction net for Tech Zone towers?", a: "Yes. We supply UV-stabilised HDPE construction net to Tech Zone and Greater Noida West high-rise sites for debris and fall protection." },
+      { q: "Can builders get construction net for Tech Zone towers?", a: "Yes. Tech Zone and Greater Noida West sites get construction net in 3 m × 50 m rolls, 50, 75 or 90 GSM, chosen for the coverage." },
       { q: "Is bird mesh available for Gaur City–area balconies?", a: "Yes. Fine nylon and PVC bird mesh is cut to balcony openings for societies across the Greater Noida West belt." }
     ]
   },
@@ -517,7 +517,7 @@ const sectors = [
     related: ['vaishali-ghaziabad', 'crossings-republik-ghaziabad', 'sahibabad-ghaziabad'],
     faq: [
       { q: "Do you deliver bird mesh to Indirapuram high-rises?", a: "Yes. Indirapuram is a priority residential zone. In-stock bird mesh often ships the same day — share balcony sizes on WhatsApp." },
-      { q: "Is construction net available for Indirapuram tower sites?", a: "Yes. UV-stabilised HDPE construction net is supplied to Indirapuram high-rise projects for debris and fall protection." }
+      { q: "Is construction net available for Indirapuram tower sites?", a: "Yes. Indirapuram sites get construction net in 3 m × 50 m rolls, 50, 75 or 90 GSM, chosen for the coverage." }
     ]
   },
   {
@@ -553,7 +553,7 @@ const sectors = [
     related: ['indirapuram-ghaziabad', 'vaishali-ghaziabad', 'raj-nagar-extension-ghaziabad'],
     faq: [
       { q: "Do you deliver to Crossings Republik high-rises?", a: "Yes. Crossings Republik is a regular delivery zone for balcony bird mesh and monkey spikes." },
-      { q: "Can site engineers get construction net at Crossings Republik?", a: "Yes. UV-stabilised HDPE construction net is supplied for debris and edge protection on active Crossings Republik towers." }
+      { q: "Can site engineers get construction net at Crossings Republik?", a: "Yes. Crossings Republik sites get construction net in 3 m × 50 m rolls, 50, 75 or 90 GSM, chosen for the coverage." }
     ]
   },
   {
@@ -816,6 +816,8 @@ const sectors = [
     ]
   }
 ];
+
+sectors.push(...require('./extra-localities'));
 
 function findBySlug(slug) {
   return sectors.find(s => s.slug === slug);

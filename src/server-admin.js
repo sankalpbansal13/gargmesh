@@ -39,17 +39,164 @@ function buildFaqJson(body) {
   return JSON.stringify(faqs);
 }
 
-function uniqueSlug(base, excludeId) {
-  let slug = base || 'product';
+function asList(value) {
+  if (Array.isArray(value)) return value;
+  if (value == null || value === '') return [];
+  return [value];
+}
+
+function categoryChoices() {
+  return db.prepare(
+    'SELECT id, slug, name FROM categories WHERE deleted = 0 ORDER BY sort_order ASC, name ASC'
+  ).all();
+}
+
+function loadDesign(id) {
+  return db.prepare(`
+    SELECT d.*, c.name AS category_name, c.slug AS category_slug
+    FROM designs d JOIN categories c ON c.id = d.category_id
+    WHERE d.id = ?
+  `).get(id);
+}
+
+function uniqueDesignSlug(categoryId, base, excludeId) {
+  let slug = base || 'design';
   let n = 1;
   while (true) {
     const row = excludeId
-      ? db.prepare('SELECT id FROM products WHERE slug = ? AND id != ?').get(slug, excludeId)
-      : db.prepare('SELECT id FROM products WHERE slug = ?').get(slug);
+      ? db.prepare('SELECT id FROM designs WHERE category_id = ? AND slug = ? AND id != ?').get(categoryId, slug, excludeId)
+      : db.prepare('SELECT id FROM designs WHERE category_id = ? AND slug = ?').get(categoryId, slug);
     if (!row) return slug;
+    slug = (base || 'design') + '-' + (n++);
+  }
+}
+
+function markDesignEdited(id) {
+  db.prepare('UPDATE designs SET admin_edited = 1 WHERE id = ?').run(id);
+}
+
+function unlinkIfUnused(filename) {
+  if (!filename) return;
+  const used = db.prepare('SELECT COUNT(*) AS c FROM design_images WHERE filename = ?').get(filename).c;
+  let legacy = 0;
+  try {
+    legacy = db.prepare('SELECT COUNT(*) AS c FROM product_images WHERE filename = ?').get(filename).c;
+  } catch (e) { legacy = 0; }
+  if (used + legacy === 0) unlinkUpload(filename);
+}
+
+function attachDesignPhotos(designId, files) {
+  if (!files || !files.length) return;
+  const hasCover = db.prepare(
+    'SELECT COUNT(*) AS c FROM design_images WHERE design_id = ? AND is_cover = 1'
+  ).get(designId).c;
+  const maxSort = db.prepare(
+    'SELECT COALESCE(MAX(sort_order), 0) AS m FROM design_images WHERE design_id = ?'
+  ).get(designId).m;
+  const ins = db.prepare(
+    `INSERT INTO design_images
+     (design_id, filename, caption, alt_text, sort_order, is_cover, width, height, material_slug)
+     VALUES (?,?,?,?,?,?,?,?,?)`
+  );
+  files.forEach((f, i) => {
+    const fp = safeUploadPath(f.filename);
+    const dims = fp ? imageDims(fp) : null;
+    ins.run(
+      designId,
+      path.basename(f.filename),
+      '',
+      '',
+      maxSort + 1 + i,
+      hasCover === 0 && i === 0 ? 1 : 0,
+      dims ? dims.width : null,
+      dims ? dims.height : null,
+      null
+    );
+  });
+}
+
+function nextMaterialSlug(designId, name) {
+  let slug = slugify(name) || 'material';
+  const base = slug;
+  let n = 1;
+  while (true) {
+    const row = db.prepare(
+      'SELECT id, deleted FROM design_materials WHERE design_id = ? AND slug = ?'
+    ).get(designId, slug);
+    if (!row) return { slug, reviveId: null };
+    if (row.deleted) return { slug, reviveId: row.id };
     slug = base + '-' + (n++);
   }
 }
+
+function saveMaterials(designId, body) {
+  const ids = asList(body.mat_id);
+  const names = asList(body.mat_name);
+  const grades = asList(body.mat_grades);
+  const shorts = asList(body.mat_short);
+  const prices = asList(body.mat_price);
+  const remove = new Set(asList(body.mat_remove).map(String));
+  const update = db.prepare(
+    `UPDATE design_materials
+     SET name = ?, grades = ?, short_desc = ?, price_from = ?, sort_order = ?, deleted = 0
+     WHERE id = ? AND design_id = ?`
+  );
+  const soft = db.prepare('UPDATE design_materials SET deleted = 1 WHERE id = ? AND design_id = ?');
+  ids.forEach((id, i) => {
+    if (!id) return;
+    if (remove.has(String(id))) {
+      soft.run(id, designId);
+      return;
+    }
+    const name = String(names[i] || '').trim();
+    if (!name) return;
+    update.run(
+      name,
+      String(grades[i] || '').trim(),
+      String(shorts[i] || '').trim(),
+      String(prices[i] || '').trim().slice(0, 80),
+      i + 1,
+      id,
+      designId
+    );
+  });
+  const newNames = asList(body.mat_new_name);
+  const newPrices = asList(body.mat_new_price);
+  const newGrades = asList(body.mat_new_grades);
+  const insert = db.prepare(
+    `INSERT INTO design_materials
+     (design_id, slug, name, price_from, grades, short_desc, sort_order, deleted)
+     VALUES (?,?,?,?,?,?,?,0)`
+  );
+  const revive = db.prepare(
+    `UPDATE design_materials
+     SET name = ?, price_from = ?, grades = ?, short_desc = ?, sort_order = ?, deleted = 0
+     WHERE id = ?`
+  );
+  newNames.forEach((raw, i) => {
+    const name = String(raw || '').trim();
+    if (!name) return;
+    const found = nextMaterialSlug(designId, name);
+    const price = String(newPrices[i] || '').trim().slice(0, 80);
+    const grade = String(newGrades[i] || '').trim();
+    if (found.reviveId) {
+      revive.run(name, price, grade, '', ids.length + i + 1, found.reviveId);
+      return;
+    }
+    insert.run(designId, found.slug, name, price, grade, '', ids.length + i + 1);
+  });
+}
+
+function waDigits(phone) {
+  let d = String(phone || '').replace(/\D/g, '');
+  if (d.startsWith('00')) d = d.slice(2);
+  if (d.length === 11 && d.startsWith('0')) d = d.slice(1);
+  if (d.length === 10) d = '91' + d;
+  return d;
+}
+app.locals.waDigits = waDigits;
+
+const ENQUIRY_STATUSES = ['new', 'contacted', 'quoted', 'closed'];
 
 function uniquePostSlug(base, excludeId) {
   let slug = base || 'post';
@@ -105,7 +252,7 @@ app.get('/admin/logout', (req, res) => {
 
 app.get('/admin/dashboard', requireAuth, (req, res) => {
   const productCount = db.prepare('SELECT COUNT(*) as c FROM designs WHERE deleted = 0').get().c;
-  const enquiryCount = db.prepare('SELECT COUNT(*) as c FROM enquiries').get().c;
+  const enquiryCount = db.prepare("SELECT COUNT(*) as c FROM enquiries WHERE COALESCE(status, 'new') = 'new'").get().c;
   const postCount = db.prepare('SELECT COUNT(*) as c FROM posts WHERE deleted = 0').get().c;
   const recentEnquiries = db.prepare('SELECT * FROM enquiries ORDER BY id DESC LIMIT 5').all();
   const recentPosts = db.prepare('SELECT id, title, slug, date FROM posts WHERE deleted = 0 ORDER BY id DESC LIMIT 5').all();
@@ -121,7 +268,9 @@ app.get('/admin/products', requireAuth, (req, res) => {
   const cat = req.query.category || '';
   const showDeleted = req.query.deleted === '1';
   let sql = `
-    SELECT d.*, c.name AS category_name, c.slug AS category_slug
+    SELECT d.*, c.name AS category_name, c.slug AS category_slug,
+      (SELECT group_concat(m.name || ' — ' || COALESCE(NULLIF(m.price_from, ''), 'Ask for quote'), ' · ')
+       FROM design_materials m WHERE m.design_id = d.id AND m.deleted = 0) AS prices
     FROM designs d JOIN categories c ON c.id = d.category_id WHERE 1=1`;
   const params = [];
   if (showDeleted) sql += ' AND d.deleted = 1';
@@ -129,47 +278,58 @@ app.get('/admin/products', requireAuth, (req, res) => {
   if (q) { sql += ' AND (d.name LIKE ? OR d.short_desc LIKE ?)'; params.push('%' + q + '%', '%' + q + '%'); }
   if (cat) { sql += ' AND c.slug = ?'; params.push(cat); }
   sql += ' ORDER BY c.sort_order ASC, d.sort_order ASC';
-  const products = db.prepare(sql).all(...params).map((p) => {
-    const mat = db.prepare(
-      'SELECT price_from FROM design_materials WHERE design_id = ? AND deleted = 0 ORDER BY sort_order ASC LIMIT 1'
-    ).get(p.id);
-    return { ...p, category: p.category_name, price_from: (mat && mat.price_from) || '', slug: p.category_slug + '/' + p.slug };
+  const products = db.prepare(sql).all(...params).map((p) => ({
+    ...p,
+    category: p.category_name,
+    slug: p.category_slug + '/' + p.slug
+  }));
+  res.render('admin/products', {
+    title: 'Manage Designs | Admin',
+    products,
+    categories: categoryChoices(),
+    q,
+    cat,
+    showDeleted,
+    layout: false
   });
-  const categories = db.prepare('SELECT slug FROM categories WHERE deleted = 0 ORDER BY sort_order').all().map(c => c.slug);
-  res.render('admin/products', { title: 'Manage Designs | Admin', products, categories, q, cat, showDeleted, layout: false });
 });
 
 app.get('/admin/products/new', requireAuth, (req, res) => {
-  res.render('admin/product-form', { title: 'Add Product | Admin', product: {}, images: [], isEdit: false, layout: false });
+  res.render('admin/product-form', {
+    title: 'Add product | Admin',
+    product: {},
+    materials: [],
+    images: [],
+    categories: categoryChoices(),
+    isEdit: false,
+    layout: false
+  });
 });
 
 app.post('/admin/products', requireAuth, upload.array('photos', 10), checkCsrfCleanupUploads, validateUploadedImages, (req, res) => {
   try {
     const b = req.body;
-    const slug = uniqueSlug(b.slug ? slugify(b.slug) : slugify(b.name));
-    const faqJson = buildFaqJson(b);
-    const rating = b.rating_value !== '' && b.rating_value != null ? Number(b.rating_value) : null;
-    const reviews = b.review_count !== '' && b.review_count != null ? parseInt(b.review_count, 10) : null;
-    const info = db.prepare(`
-      INSERT INTO products (slug, name, category, short_desc, description, materials, sizes, grades, applications, price_from, faq, meta_title, meta_description, meta_keywords, featured, rating_value, review_count)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-    `).run(
-      slug, b.name, b.category, b.short_desc, b.description, b.materials, b.sizes, b.grades, b.applications, b.price_from,
-      faqJson, b.meta_title, b.meta_description, b.meta_keywords, b.featured ? 1 : 0,
-      (rating != null && !Number.isNaN(rating) ? rating : null),
-      (reviews != null && !Number.isNaN(reviews) ? reviews : null)
-    );
-    if (req.files && req.files.length) {
-      const hasCover = db.prepare('SELECT COUNT(*) as c FROM product_images WHERE product_id = ? AND is_cover = 1').get(info.lastInsertRowid).c;
-      const insImg = db.prepare('INSERT INTO product_images (product_id, filename, caption, alt_text, sort_order, is_cover, width, height) VALUES (?,?,?,?,?,?,?,?)');
-      req.files.forEach((f, i) => {
-        const fp = safeUploadPath(f.filename);
-        const dims = fp ? imageDims(fp) : null;
-        insImg.run(info.lastInsertRowid, path.basename(f.filename), '', '', i, (i === 0 && !hasCover) ? 1 : 0, dims ? dims.width : null, dims ? dims.height : null);
-      });
+    const categoryId = Number(b.category_id);
+    const category = db.prepare('SELECT id FROM categories WHERE id = ? AND deleted = 0').get(categoryId);
+    if (!category || !String(b.name || '').trim()) {
+      (req.files || []).forEach((f) => unlinkUpload(f.filename));
+      req.session.flash = 'Name and category are required.';
+      return res.redirect('/admin/products/new');
     }
-    req.session.flash = '✅ Product created successfully.';
-    res.redirect('/admin/products');
+    const slug = uniqueDesignSlug(categoryId, b.slug ? slugify(b.slug) : slugify(b.name));
+    const info = db.prepare(`
+      INSERT INTO designs
+      (category_id, slug, name, short_desc, description, applications, faq, meta_title, meta_description, meta_keywords, featured, admin_edited, custom)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,1,1)
+    `).run(
+      categoryId, slug, String(b.name).trim(), String(b.short_desc || '').trim(), String(b.description || '').trim(),
+      String(b.applications || '').trim(), buildFaqJson(b), String(b.meta_title || '').trim(),
+      String(b.meta_description || '').trim(), String(b.meta_keywords || '').trim(), b.featured ? 1 : 0
+    );
+    saveMaterials(info.lastInsertRowid, b);
+    attachDesignPhotos(info.lastInsertRowid, req.files);
+    req.session.flash = 'Product created. It is on the live catalogue.';
+    res.redirect('/admin/products/' + info.lastInsertRowid + '/edit');
   } catch (err) {
     console.error('Create product failed', err);
     (req.files || []).forEach((f) => unlinkUpload(f.filename));
@@ -178,109 +338,77 @@ app.post('/admin/products', requireAuth, upload.array('photos', 10), checkCsrfCl
   }
 });
 
-// Duplicate a product (clone data + copy image files into a new draft)
-app.post('/admin/products/:id/duplicate', requireAuth, checkCsrf, (req, res) => {
-  try {
-    const p = db.prepare('SELECT * FROM products WHERE id = ?').get(req.params.id);
-    if (!p) return res.redirect('/admin/products');
-    const slug = uniqueSlug(slugify(p.name) + '-copy');
-    const info = db.prepare(`
-      INSERT INTO products (slug, name, category, short_desc, description, materials, sizes, grades, applications, price_from, faq, meta_title, meta_description, meta_keywords, featured, rating_value, review_count)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-    `).run(
-      slug, p.name + ' (Copy)', p.category, p.short_desc, p.description, p.materials, p.sizes, p.grades, p.applications,
-      p.price_from, p.faq, p.meta_title, p.meta_description, p.meta_keywords, 0, p.rating_value || null, p.review_count || null
-    );
-    const newId = info.lastInsertRowid;
-    const imgs = db.prepare('SELECT * FROM product_images WHERE product_id = ? ORDER BY sort_order ASC, id ASC').all(p.id);
-    const insImg = db.prepare('INSERT INTO product_images (product_id, filename, caption, alt_text, sort_order, is_cover, width, height) VALUES (?,?,?,?,?,?,?,?)');
-    const uploadsDir = path.join(__dirname, '..', 'public', 'uploads');
-    imgs.forEach((im) => {
-      const src = safeUploadPath(im.filename);
-      if (!src || !fs.existsSync(src)) return;
-      const ext = path.extname(im.filename) || '.jpg';
-      const copyName = crypto.randomBytes(12).toString('hex') + ext;
-      try {
-        fs.copyFileSync(src, path.join(uploadsDir, copyName));
-        insImg.run(newId, copyName, im.caption || '', im.alt_text || '', im.sort_order || 0, im.is_cover ? 1 : 0, im.width || null, im.height || null);
-      } catch (e) {
-        console.warn('Duplicate image copy failed', im.filename, e.message);
-      }
-    });
-    req.session.flash = 'Product duplicated (including photos).';
-  } catch (err) {
-    console.error('Duplicate product failed', err);
-    req.session.flash = 'Could not duplicate product.';
-  }
-  res.redirect('/admin/products');
-});
-
 app.get('/admin/products/:id/edit', requireAuth, (req, res) => {
-  const product = db.prepare('SELECT * FROM products WHERE id = ?').get(req.params.id);
+  const product = loadDesign(req.params.id);
   if (!product) return res.redirect('/admin/products');
-  const images = db.prepare('SELECT * FROM product_images WHERE product_id = ? ORDER BY sort_order ASC, id ASC').all(product.id);
-  res.render('admin/product-form', { title: 'Edit Product | Admin', product, images, isEdit: true, layout: false });
+  const materials = db.prepare(
+    'SELECT * FROM design_materials WHERE design_id = ? AND deleted = 0 ORDER BY sort_order ASC, id ASC'
+  ).all(product.id);
+  const images = db.prepare(
+    'SELECT * FROM design_images WHERE design_id = ? ORDER BY sort_order ASC, id ASC'
+  ).all(product.id);
+  res.render('admin/product-form', {
+    title: 'Edit product | Admin',
+    product,
+    materials,
+    images,
+    categories: categoryChoices(),
+    isEdit: true,
+    layout: false
+  });
 });
 
 app.put('/admin/products/:id', requireAuth, upload.array('photos', 10), checkCsrfCleanupUploads, validateUploadedImages, (req, res) => {
+  const id = req.params.id;
   try {
-    const b = req.body;
-    const id = req.params.id;
-    const slug = uniqueSlug(b.slug ? slugify(b.slug) : slugify(b.name), id);
-    const faqJson = buildFaqJson(b);
-    const rating = b.rating_value !== '' && b.rating_value != null ? Number(b.rating_value) : null;
-    const reviews = b.review_count !== '' && b.review_count != null ? parseInt(b.review_count, 10) : null;
-    db.prepare(`
-      UPDATE products SET slug=?, name=?, category=?, short_desc=?, description=?, materials=?, sizes=?, grades=?, applications=?, price_from=?, faq=?, meta_title=?, meta_description=?, meta_keywords=?, featured=?, rating_value=?, review_count=? WHERE id=?
-    `).run(
-      slug, b.name, b.category, b.short_desc, b.description, b.materials, b.sizes, b.grades, b.applications, b.price_from,
-      faqJson, b.meta_title, b.meta_description, b.meta_keywords, b.featured ? 1 : 0,
-      (rating != null && !Number.isNaN(rating) ? rating : null),
-      (reviews != null && !Number.isNaN(reviews) ? reviews : null),
-      id
-    );
-    if (req.files && req.files.length) {
-      const hasCover = db.prepare('SELECT COUNT(*) as c FROM product_images WHERE product_id = ? AND is_cover = 1').get(id).c;
-      const maxSort = db.prepare('SELECT COALESCE(MAX(sort_order),-1) as m FROM product_images WHERE product_id = ?').get(id).m;
-      const insImg = db.prepare('INSERT INTO product_images (product_id, filename, caption, alt_text, sort_order, is_cover, width, height) VALUES (?,?,?,?,?,?,?,?)');
-      req.files.forEach((f, i) => {
-        const fp = safeUploadPath(f.filename);
-        const dims = fp ? imageDims(fp) : null;
-        insImg.run(id, path.basename(f.filename), '', '', maxSort + 1 + i, (maxSort === -1 && i === 0 && !hasCover) ? 1 : 0, dims ? dims.width : null, dims ? dims.height : null);
-      });
+    const existing = loadDesign(id);
+    if (!existing) {
+      (req.files || []).forEach((f) => unlinkUpload(f.filename));
+      req.session.flash = 'Design not found.';
+      return res.redirect('/admin/products');
     }
-    req.session.flash = '✅ Product updated successfully.';
-    res.redirect('/admin/products');
+    const b = req.body;
+    if (!String(b.name || '').trim()) {
+      (req.files || []).forEach((f) => unlinkUpload(f.filename));
+      req.session.flash = 'Name is required.';
+      return res.redirect('/admin/products/' + id + '/edit');
+    }
+    const categoryId = Number(b.category_id) || existing.category_id;
+    const category = db.prepare('SELECT id FROM categories WHERE id = ? AND deleted = 0').get(categoryId);
+    if (!category) {
+      (req.files || []).forEach((f) => unlinkUpload(f.filename));
+      req.session.flash = 'Pick a category.';
+      return res.redirect('/admin/products/' + id + '/edit');
+    }
+    const slug = uniqueDesignSlug(categoryId, b.slug ? slugify(b.slug) : slugify(b.name), id);
+    db.prepare(`
+      UPDATE designs SET
+        category_id = ?, slug = ?, name = ?, short_desc = ?, description = ?, applications = ?,
+        faq = ?, meta_title = ?, meta_description = ?, meta_keywords = ?, featured = ?, admin_edited = 1
+      WHERE id = ?
+    `).run(
+      categoryId, slug, String(b.name).trim(), String(b.short_desc || '').trim(), String(b.description || '').trim(),
+      String(b.applications || '').trim(), buildFaqJson(b), String(b.meta_title || '').trim(),
+      String(b.meta_description || '').trim(), String(b.meta_keywords || '').trim(), b.featured ? 1 : 0, id
+    );
+    saveMaterials(id, b);
+    attachDesignPhotos(id, req.files);
+    req.session.flash = 'Product saved. This version stays after the next restart.';
+    res.redirect('/admin/products/' + id + '/edit');
   } catch (err) {
     console.error('Update product failed', err);
     (req.files || []).forEach((f) => unlinkUpload(f.filename));
     req.session.flash = 'Could not update product. Please try again.';
-    res.redirect('/admin/products/' + req.params.id + '/edit');
+    res.redirect('/admin/products/' + id + '/edit');
   }
 });
 
-// Quick price update — applies to all materials on a design
-app.post('/admin/products/:id/price', requireAuth, checkCsrf, (req, res) => {
-  const id = req.params.id;
-  const design = db.prepare('SELECT id, name FROM designs WHERE id = ?').get(id);
-  if (!design) {
-    req.session.flash = 'Design not found.';
-    return res.redirect('/admin/products');
-  }
-  const price = String(req.body.price_from || '').trim().slice(0, 80);
-  db.prepare('UPDATE design_materials SET price_from = ? WHERE design_id = ? AND deleted = 0').run(price, id);
-  req.session.flash = `Price updated for all materials on ${design.name}: ${price || '(cleared)'}`;
-  const back = safeRedirectPath(req.body.redirect, '/admin/products');
-  res.redirect(back);
-});
-
-// Soft-delete design
 app.delete('/admin/products/:id', requireAuth, checkCsrf, (req, res) => {
   const p = db.prepare('SELECT id, slug FROM designs WHERE id = ?').get(req.params.id);
   if (p) {
     const tombstone = p.slug + '-deleted-' + p.id;
     db.prepare('UPDATE designs SET deleted = 1, slug = ? WHERE id = ?').run(tombstone, p.id);
-    req.session.flash = 'Design moved to deleted (restore anytime).';
+    req.session.flash = 'Design moved to deleted. It will not be recreated on restart.';
   } else {
     req.session.flash = 'Design not found.';
   }
@@ -288,10 +416,11 @@ app.delete('/admin/products/:id', requireAuth, checkCsrf, (req, res) => {
 });
 
 app.post('/admin/products/:id/restore', requireAuth, checkCsrf, (req, res) => {
-  const p = db.prepare('SELECT id, slug, name FROM designs WHERE id = ?').get(req.params.id);
+  const p = db.prepare('SELECT id, slug, name, category_id FROM designs WHERE id = ?').get(req.params.id);
   if (p) {
     const restoredBase = String(p.slug || '').replace(new RegExp('-deleted-' + p.id + '$'), '') || slugify(p.name);
-    db.prepare('UPDATE designs SET deleted = 0, slug = ? WHERE id = ?').run(restoredBase, p.id);
+    const slug = uniqueDesignSlug(p.category_id, restoredBase, p.id);
+    db.prepare('UPDATE designs SET deleted = 0, slug = ? WHERE id = ?').run(slug, p.id);
     req.session.flash = 'Design restored.';
   } else {
     req.session.flash = 'Design not found.';
@@ -301,57 +430,64 @@ app.post('/admin/products/:id/restore', requireAuth, checkCsrf, (req, res) => {
 
 app.post('/admin/products/:id/permdelete', requireAuth, checkCsrf, (req, res) => {
   const imgs = db.prepare('SELECT filename FROM design_images WHERE design_id = ?').all(req.params.id);
-  imgs.forEach(im => unlinkUpload(im.filename));
   db.prepare('DELETE FROM design_images WHERE design_id = ?').run(req.params.id);
+  imgs.forEach((im) => unlinkIfUnused(im.filename));
   db.prepare('DELETE FROM design_materials WHERE design_id = ?').run(req.params.id);
   db.prepare('DELETE FROM designs WHERE id = ?').run(req.params.id);
   req.session.flash = 'Design permanently deleted.';
   res.redirect('/admin/products?deleted=1');
 });
 
-// Update image caption + alt text
+function imageDesignRedirect(img) {
+  return '/admin/products/' + (img ? img.design_id : '') + '/edit';
+}
+
 app.post('/admin/images/:id', requireAuth, checkCsrf, (req, res) => {
-  const { caption, alt_text } = req.body;
-  const img = db.prepare('SELECT * FROM product_images WHERE id = ?').get(req.params.id);
-  db.prepare('UPDATE product_images SET caption = ?, alt_text = ? WHERE id = ?').run(caption || '', alt_text || '', req.params.id);
-  res.redirect('/admin/products/' + (img ? img.product_id : '') + '/edit');
+  const img = db.prepare('SELECT * FROM design_images WHERE id = ?').get(req.params.id);
+  if (!img) return res.redirect('/admin/products');
+  db.prepare('UPDATE design_images SET caption = ?, alt_text = ? WHERE id = ?').run(
+    req.body.caption || '', req.body.alt_text || '', img.id
+  );
+  markDesignEdited(img.design_id);
+  res.redirect(imageDesignRedirect(img));
 });
 
-// Set image as cover
 app.post('/admin/images/:id/cover', requireAuth, checkCsrf, (req, res) => {
-  const img = db.prepare('SELECT * FROM product_images WHERE id = ?').get(req.params.id);
-  if (img) {
-    db.prepare('UPDATE product_images SET is_cover = 0 WHERE product_id = ?').run(img.product_id);
-    db.prepare('UPDATE product_images SET is_cover = 1 WHERE id = ?').run(img.id);
-  }
-  res.redirect('/admin/products/' + (img ? img.product_id : '') + '/edit');
+  const img = db.prepare('SELECT * FROM design_images WHERE id = ?').get(req.params.id);
+  if (!img) return res.redirect('/admin/products');
+  db.prepare('UPDATE design_images SET is_cover = 0 WHERE design_id = ?').run(img.design_id);
+  db.prepare('UPDATE design_images SET is_cover = 1 WHERE id = ?').run(img.id);
+  markDesignEdited(img.design_id);
+  res.redirect(imageDesignRedirect(img));
 });
 
-// Reorder image (up/down) by swapping sort_order with neighbour
 app.post('/admin/images/:id/move', requireAuth, checkCsrf, (req, res) => {
-  const dir = req.body.dir || req.query.dir || 'up';
-  const img = db.prepare('SELECT * FROM product_images WHERE id = ?').get(req.params.id);
-  if (img) {
-    const ordered = db.prepare('SELECT * FROM product_images WHERE product_id = ? ORDER BY sort_order ASC, id ASC').all(img.product_id);
-    const idx = ordered.findIndex(o => o.id === img.id);
-    const swapIdx = dir === 'up' ? idx - 1 : idx + 1;
-    if (swapIdx >= 0 && swapIdx < ordered.length) {
-      const other = ordered[swapIdx];
-      db.prepare('UPDATE product_images SET sort_order = ? WHERE id = ?').run(other.sort_order, img.id);
-      db.prepare('UPDATE product_images SET sort_order = ? WHERE id = ?').run(img.sort_order, other.id);
-    }
+  const dir = req.body.dir || 'up';
+  const img = db.prepare('SELECT * FROM design_images WHERE id = ?').get(req.params.id);
+  if (!img) return res.redirect('/admin/products');
+  const ordered = db.prepare(
+    'SELECT * FROM design_images WHERE design_id = ? ORDER BY sort_order ASC, id ASC'
+  ).all(img.design_id);
+  const idx = ordered.findIndex((o) => o.id === img.id);
+  const swapIdx = dir === 'up' ? idx - 1 : idx + 1;
+  if (swapIdx >= 0 && swapIdx < ordered.length) {
+    const other = ordered[swapIdx];
+    db.prepare('UPDATE design_images SET sort_order = ? WHERE id = ?').run(other.sort_order, img.id);
+    db.prepare('UPDATE design_images SET sort_order = ? WHERE id = ?').run(img.sort_order, other.id);
+    markDesignEdited(img.design_id);
   }
-  res.redirect('/admin/products/' + (img ? img.product_id : '') + '/edit');
+  res.redirect(imageDesignRedirect(img));
 });
 
 app.delete('/admin/images/:id', requireAuth, checkCsrf, (req, res) => {
-  const img = db.prepare('SELECT * FROM product_images WHERE id = ?').get(req.params.id);
-  if (img) {
-    unlinkUpload(img.filename);
-    db.prepare('DELETE FROM product_images WHERE id = ?').run(img.id);
-  }
-  res.redirect('/admin/products/' + (img ? img.product_id : '') + '/edit');
+  const img = db.prepare('SELECT * FROM design_images WHERE id = ?').get(req.params.id);
+  if (!img) return res.redirect('/admin/products');
+  db.prepare('DELETE FROM design_images WHERE id = ?').run(img.id);
+  unlinkIfUnused(img.filename);
+  markDesignEdited(img.design_id);
+  res.redirect(imageDesignRedirect(img));
 });
+
 
 // ---------- BLOG / POSTS ----------
 
@@ -478,8 +614,28 @@ app.post('/admin/posts/:id/permdelete', requireAuth, checkCsrf, (req, res) => {
 });
 
 app.get('/admin/enquiries', requireAuth, (req, res) => {
-  const enquiries = db.prepare('SELECT * FROM enquiries ORDER BY id DESC').all();
-  res.render('admin/enquiries', { title: 'Enquiries | Admin', enquiries, layout: false });
+  const status = ENQUIRY_STATUSES.includes(req.query.status) ? req.query.status : '';
+  const enquiries = status
+    ? db.prepare('SELECT * FROM enquiries WHERE COALESCE(status, \'new\') = ? ORDER BY id DESC').all(status)
+    : db.prepare('SELECT * FROM enquiries ORDER BY id DESC').all();
+  res.render('admin/enquiries', {
+    title: 'Enquiries | Admin',
+    enquiries,
+    status,
+    statuses: ENQUIRY_STATUSES,
+    layout: false
+  });
+});
+
+app.post('/admin/enquiries/:id/status', requireAuth, checkCsrf, (req, res) => {
+  const status = ENQUIRY_STATUSES.includes(req.body.status) ? req.body.status : 'new';
+  const note = String(req.body.note || '').trim().slice(0, 2000);
+  db.prepare('UPDATE enquiries SET status = ?, note = ? WHERE id = ?').run(status, note, req.params.id);
+  req.session.flash = 'Enquiry updated.';
+  const back = req.body.status_filter && ENQUIRY_STATUSES.includes(req.body.status_filter)
+    ? '/admin/enquiries?status=' + req.body.status_filter
+    : '/admin/enquiries';
+  res.redirect(back);
 });
 
 // CSV export of enquiries
@@ -489,8 +645,8 @@ app.get('/admin/enquiries.csv', requireAuth, (req, res) => {
     const s = (v === null || v === undefined) ? '' : String(v);
     return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
   };
-  const header = ['id', 'name', 'phone', 'email', 'product', 'message', 'created_at'].join(',');
-  const rows = enquiries.map(e => [e.id, e.name, e.phone, e.email, e.product, e.message, e.created_at].map(esc).join(','));
+  const header = ['id', 'name', 'phone', 'email', 'product', 'message', 'status', 'note', 'created_at'].join(',');
+  const rows = enquiries.map(e => [e.id, e.name, e.phone, e.email, e.product, e.message, e.status || 'new', e.note, e.created_at].map(esc).join(','));
   const csv = header + '\n' + rows.join('\n');
   res.set('Content-Type', 'text/csv');
   res.set('Content-Disposition', 'attachment; filename="enquiries.csv"');
@@ -511,6 +667,32 @@ app.delete('/admin/enquiries/:id', requireAuth, checkCsrf, (req, res) => {
   db.prepare('DELETE FROM enquiries WHERE id = ?').run(req.params.id);
   req.session.flash = 'Enquiry deleted.';
   res.redirect('/admin/enquiries');
+});
+
+app.get('/admin/settings', requireAuth, (req, res) => {
+  res.render('admin/settings', { title: 'Password | Admin', layout: false });
+});
+
+app.post('/admin/settings/password', requireAuth, checkCsrf, (req, res) => {
+  const current = req.body.current_password || '';
+  const next = String(req.body.new_password || '');
+  const again = String(req.body.confirm_password || '');
+  const admin = db.prepare('SELECT * FROM admin WHERE username = ?').get('admin');
+  if (!admin || !bcrypt.compareSync(current, admin.password || '')) {
+    req.session.flash = 'Current password is wrong.';
+    return res.redirect('/admin/settings');
+  }
+  if (next.length < 8) {
+    req.session.flash = 'New password must be at least 8 characters.';
+    return res.redirect('/admin/settings');
+  }
+  if (next !== again) {
+    req.session.flash = 'New password and confirmation do not match.';
+    return res.redirect('/admin/settings');
+  }
+  db.prepare('UPDATE admin SET password = ? WHERE id = ?').run(bcrypt.hashSync(next, 10), admin.id);
+  req.session.flash = 'Password changed.';
+  res.redirect('/admin/settings');
 });
 
 // 404 (last)

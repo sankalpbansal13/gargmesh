@@ -20,7 +20,9 @@ function retireLegacyCategories() {
 /** Ensure seed materials exist; soft-delete design_materials not in the seed list for that design. */
 function syncDesignMaterials(catalog) {
   const getCat = db.prepare('SELECT id FROM categories WHERE slug = ?');
-  const getDesign = db.prepare('SELECT id FROM designs WHERE category_id = ? AND slug = ?');
+  const getDesign = db.prepare(
+    'SELECT id, COALESCE(admin_edited, 0) AS admin_edited, COALESCE(custom, 0) AS custom FROM designs WHERE category_id = ? AND slug = ? AND deleted = 0'
+  );
   const hasMatDeleted = tableHasColumn('design_materials', 'deleted');
   const getMat = hasMatDeleted
     ? db.prepare('SELECT id, deleted FROM design_materials WHERE design_id = ? AND slug = ?')
@@ -31,7 +33,7 @@ function syncDesignMaterials(catalog) {
     VALUES (@design_id, @slug, @name, @price_from, @grades, @short_desc, @sort_order)
   `);
   const updateMat = db.prepare(`
-    UPDATE design_materials SET name = ?, price_from = ?, grades = ?, short_desc = ?, sort_order = ?
+    UPDATE design_materials SET name = ?, grades = ?, short_desc = ?, sort_order = ?
     WHERE id = ?
   `);
   const restoreMat = hasMatDeleted
@@ -52,7 +54,7 @@ function syncDesignMaterials(catalog) {
       if (!catRow) continue;
       for (const d of cat.designs) {
         const designRow = getDesign.get(catRow.id, d.slug);
-        if (!designRow) continue;
+        if (!designRow || designRow.admin_edited || designRow.custom) continue;
         const seedSlugs = new Set((d.materials || []).map((m) => m.slug));
         for (const m of d.materials || []) {
           const existing = getMat.get(designRow.id, m.slug);
@@ -68,7 +70,7 @@ function syncDesignMaterials(catalog) {
             });
             matsAdded++;
           } else {
-            updateMat.run(m.name, m.price_from, m.grades, m.short_desc, m.sort_order, existing.id);
+            updateMat.run(m.name, m.grades, m.short_desc, m.sort_order, existing.id);
             if (hasMatDeleted && existing.deleted) {
               restoreMat.run(existing.id);
               matsRestored++;
@@ -95,6 +97,32 @@ function syncDesignMaterials(catalog) {
   }
 }
 
+/** Soft-delete designs whose slugs are no longer in the seed list for that category. */
+function retireDesignsNotInCatalog(catalog) {
+  if (!tableHasColumn('designs', 'deleted')) return;
+  const getCat = db.prepare('SELECT id FROM categories WHERE slug = ?');
+  const list = db.prepare(
+    'SELECT id, slug, COALESCE(custom, 0) AS custom FROM designs WHERE category_id = ? AND deleted = 0'
+  );
+  const retire = db.prepare('UPDATE designs SET deleted = 1 WHERE id = ? AND deleted = 0');
+  let n = 0;
+  const tx = db.transaction(() => {
+    for (const cat of catalog.categories) {
+      const row = getCat.get(cat.slug);
+      if (!row) continue;
+      const keep = new Set((cat.designs || []).map((d) => d.slug));
+      for (const d of list.all(row.id)) {
+        if (d.custom) continue;
+        if (!keep.has(d.slug)) {
+          if (retire.run(d.id).changes) n++;
+        }
+      }
+    }
+  });
+  tx();
+  if (n) console.log(`Seed: soft-deleted ${n} design${n === 1 ? '' : 's'} no longer in the catalogue.`);
+}
+
 function ensureCatalog() {
   const catalog = buildCatalog();
   const catCount = db.prepare('SELECT COUNT(*) AS c FROM categories').get().c;
@@ -113,9 +141,16 @@ function ensureCatalog() {
     (@category_id, @slug, @name, @hole_shape, @hole_mm, @pitch_mm, @angle_deg, @open_area_pct,
      @short_desc, @description, @applications, @faq, @meta_title, @meta_description, @meta_keywords, @sort_order, @featured)
   `);
-  const getDesign = db.prepare('SELECT id, slug FROM designs WHERE category_id = ? AND slug = ?');
+  const getDesign = db.prepare(
+    'SELECT id, slug, COALESCE(admin_edited, 0) AS admin_edited, COALESCE(custom, 0) AS custom FROM designs WHERE category_id = ? AND slug = ?'
+  );
   const getDesignBySort = db.prepare(
-    'SELECT id, slug FROM designs WHERE category_id = ? AND sort_order = ? AND deleted = 0'
+    `SELECT id, slug, COALESCE(admin_edited, 0) AS admin_edited, COALESCE(custom, 0) AS custom
+     FROM designs WHERE category_id = ? AND sort_order = ? AND deleted = 0
+       AND COALESCE(admin_edited, 0) = 0 AND COALESCE(custom, 0) = 0`
+  );
+  const retiredSlug = db.prepare(
+    'SELECT id, slug FROM designs WHERE category_id = ? AND deleted = 1'
   );
   const updateDesign = db.prepare(`
     UPDATE designs SET
@@ -184,7 +219,8 @@ function ensureCatalog() {
       for (const d of cat.designs) {
         let designRow = getDesign.get(catRow.id, d.slug);
         if (!designRow) {
-          designRow = getDesignBySort.get(catRow.id, d.sort_order);
+          const bySort = getDesignBySort.get(catRow.id, d.sort_order);
+          if (bySort) designRow = bySort;
         }
         const payload = {
           category_id: catRow.id,
@@ -206,13 +242,16 @@ function ensureCatalog() {
           featured: d.featured
         };
         if (!designRow) {
+          const buried = retiredSlug.all(catRow.id).some((r) => r.slug === d.slug + '-deleted-' + r.id);
+          if (buried) continue;
           insertDesign.run(payload);
           designRow = getDesign.get(catRow.id, d.slug);
           designsAdded++;
-        } else {
+        } else if (!designRow.admin_edited && !designRow.custom) {
           updateDesign.run({ ...payload, id: designRow.id });
           designsUpdated++;
         }
+        if (designRow.admin_edited || designRow.custom) continue;
         for (const m of d.materials) {
           if (getMat.get(designRow.id, m.slug)) continue;
           insertMat.run({
@@ -233,6 +272,7 @@ function ensureCatalog() {
 
   retireLegacyCategories();
   syncDesignMaterials(catalog);
+  retireDesignsNotInCatalog(catalog);
 
   if (catCount === 0) {
     console.log(`Seed: catalog inserted (${catsAdded} categories, ${designsAdded} designs, ${matsAdded} materials).`);

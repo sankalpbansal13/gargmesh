@@ -160,6 +160,10 @@ addColumnIfMissing('product_images', 'alt_text', 'TEXT');
 addColumnIfMissing('product_images', 'is_cover', 'INTEGER DEFAULT 0');
 addColumnIfMissing('product_images', 'width', 'INTEGER');
 addColumnIfMissing('product_images', 'height', 'INTEGER');
+addColumnIfMissing('designs', 'admin_edited', 'INTEGER DEFAULT 0');
+addColumnIfMissing('designs', 'custom', 'INTEGER DEFAULT 0');
+addColumnIfMissing('enquiries', 'status', "TEXT DEFAULT 'new'");
+addColumnIfMissing('enquiries', 'note', 'TEXT');
 
 // Known published defaults — never auto-set these as the live password going forward.
 const PUBLISHED_DEFAULTS = ['bhavyathegreat', 'gargmesh2026'];

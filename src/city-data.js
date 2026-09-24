@@ -46,7 +46,7 @@ const cities = {
     delivery: "Same-day dispatch to Ghaziabad industrial areas for in-stock items; 1–2 days for cut-to-size and bulk orders across the district.",
     faq: [
       { q: "Do you deliver welded mesh to Sahibabad Industrial Area?", a: "Yes. Sahibabad and Site 4 are core delivery zones for us — in-stock welded mesh and perforated sheet ship same day. Call 9910238277 to confirm stock and timing." },
-      { q: "Can I get construction safety net for a high-rise in Indirapuram?", a: "Yes. Our UV-stabilised HDPE construction net is supplied to high-rise projects across Indirapuram, Vaishali and Kaushambi for debris and fall protection." },
+      { q: "Can I get construction safety net for a high-rise in Indirapuram?", a: "Yes. Construction net for Indirapuram, Vaishali and Kaushambi is a 3 m × 50 m roll in 50, 75 or 90 GSM. Pick the GSM for the coverage you need." },
       { q: "Do you supply GI welded mesh for poultry farms near Hapur Road?", a: "Yes. We supply rust-resistant GI welded mesh in multiple opening sizes for poultry farms and boundary fencing across the Hapur Road and Muradnagar belt." }
     ]
   },

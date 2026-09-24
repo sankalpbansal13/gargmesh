@@ -195,6 +195,11 @@ function ensureDesignImages() {
   copied += studio.copied;
   linked += studio.linked;
 
+  // These three categories keep only their own photos. Nothing is shared across them.
+  const owned = ensureExclusiveProductPhotos();
+  copied += owned.copied;
+  linked += owned.linked;
+
   if (copied || linked) {
     console.log(`Seed images: copied ${copied} file(s), linked ${linked} design image row(s).`);
   }
@@ -388,6 +393,79 @@ function ensureStudioImages() {
       const src = path.join(expDir, srcName);
       if (copyIfNeeded(src, dest, true)) copied++;
       addImage(design, dest, `${design.name} — ${v.key} — Garg Industrial Mesh`, v.sort, v.cover, seen);
+    }
+  }
+
+  return { copied, linked };
+}
+
+/**
+ * Catalogue photos for construction net, chicken mesh, and POP jali.
+ * A design saved in admin is left alone. Extra photos are not removed.
+ */
+function ensureExclusiveProductPhotos() {
+  const photoDir = path.join(root, 'assets', 'catalog-photos');
+  const sets = [
+    {
+      category: 'construction-net',
+      images: [
+        { file: 'construction-net-closeup.jpg', cover: true, alt: 'Construction net close-up — Garg Industrial Mesh' },
+        { file: 'construction-net-stock.jpg', cover: false, alt: 'Construction net in stock — Garg Industrial Mesh' }
+      ]
+    },
+    {
+      category: 'chicken-mesh',
+      images: [
+        { file: 'chicken-mesh.png', cover: true, alt: 'GI chicken mesh rolls — Garg Industrial Mesh' }
+      ]
+    },
+    {
+      category: 'pop-plaster-jali',
+      images: [
+        { file: 'pop-jali.png', cover: true, alt: 'Square POP plaster jali rolls — Garg Industrial Mesh' }
+      ]
+    }
+  ];
+  const getDesigns = db.prepare(
+    `SELECT d.id, d.name, COALESCE(d.admin_edited, 0) AS admin_edited FROM designs d
+     JOIN categories c ON c.id = d.category_id
+     WHERE c.slug = ? AND c.deleted = 0 AND d.deleted = 0`
+  );
+  const hasFile = db.prepare('SELECT id FROM design_images WHERE design_id = ? AND filename = ?');
+  const insert = db.prepare(
+    `INSERT INTO design_images
+     (design_id, filename, caption, alt_text, sort_order, is_cover, width, height, material_slug)
+     VALUES (?,?,?,?,?,?,?,?,?)`
+  );
+  const setCover = db.prepare('UPDATE design_images SET is_cover = 1 WHERE design_id = ? AND filename = ?');
+
+  let copied = 0;
+  let linked = 0;
+
+  for (const set of sets) {
+    const cover = set.images.find((img) => img.cover) || set.images[0];
+    for (const img of set.images) {
+      const src = path.join(photoDir, img.file);
+      const before = fs.existsSync(path.join(uploadsDir, img.file));
+      if (copyIfNeeded(src, img.file, true)) {
+        if (!before) copied++;
+      }
+    }
+    for (const design of getDesigns.all(set.category)) {
+      if (design.admin_edited) continue;
+      set.images.forEach((img, i) => {
+        if (!fs.existsSync(path.join(uploadsDir, img.file))) return;
+        if (!hasFile.get(design.id, img.file)) {
+          insert.run(design.id, img.file, '', img.alt, i + 1, 0, null, null, null);
+          linked++;
+        }
+      });
+      const hasCover = db.prepare(
+        'SELECT COUNT(*) AS c FROM design_images WHERE design_id = ? AND is_cover = 1'
+      ).get(design.id).c;
+      if (!hasCover && cover && fs.existsSync(path.join(uploadsDir, cover.file))) {
+        setCover.run(design.id, cover.file);
+      }
     }
   }
 

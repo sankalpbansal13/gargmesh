@@ -2,10 +2,11 @@
 <%- include('_nav', { adminPage: 'products' }) %>
 <main class="admin-main">
   <h1>Designs</h1>
-  <p class="admin-row-meta">Category → design → material catalogue. Seeded perforated patterns; edit prices via design materials in DB / next admin pass.</p>
+  <p class="admin-row-meta">Edit a design to set a separate price for each metal. A save stays after the server restarts.</p>
   <% if (typeof flash !== 'undefined' && flash) { %><p class="form-success"><%= flash %></p><% } %>
   <div class="admin-toolbar">
-    <a href="/products" class="btn btn-amber btn-sm" target="_blank" rel="noopener">View public catalogue</a>
+    <a href="/admin/products/new" class="btn btn-amber btn-sm">Add product</a>
+    <a href="/products" class="btn btn-ghost btn-sm" target="_blank" rel="noopener">View public catalogue</a>
     <% if (showDeleted) { %>
     <a href="/admin/products" class="btn btn-ghost btn-sm">View live products</a>
     <% } else { %>
@@ -20,7 +21,7 @@
     <label>Category
       <select name="category">
         <option value="">All categories</option>
-        <% categories.forEach(function(c){ %><option value="<%= c %>" <%= cat===c?'selected':'' %>><%= c %></option><% }); %>
+        <% categories.forEach(function(c){ %><option value="<%= c.slug %>" <%= cat===c.slug?'selected':'' %>><%= c.name %></option><% }); %>
       </select>
     </label>
     <button type="submit" class="btn btn-ghost btn-sm">Filter</button>
@@ -40,15 +41,11 @@
           <% if (p.featured) { %> ★<% } %>
         </div>
         <div class="admin-row-meta"><%= p.category || '—' %></div>
+        <% if (p.prices) { %><div class="admin-row-meta"><%= p.prices %></div><% } %>
       </div>
-      <form action="/admin/products/<%= p.id %>/price" method="POST" class="price-quick-form">
-        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-        <input type="hidden" name="redirect" value="/admin/products<%= showDeleted?'?deleted=1':'' %><%= q ? (showDeleted?'&':'?')+'q='+encodeURIComponent(q) : '' %>">
-        <input type="text" name="price_from" value="<%= p.price_from||'' %>" placeholder="e.g. ₹120/sqft" aria-label="Price for <%= p.name %>" class="price-quick-input">
-        <button type="submit" class="btn btn-amber btn-sm">Save</button>
-      </form>
       <div class="admin-row-actions">
         <% if (!p.deleted) { %>
+        <a href="/admin/products/<%= p.id %>/edit" class="btn btn-amber btn-sm">Edit</a>
         <a href="/products/<%= p.slug %>" class="btn btn-ghost btn-sm" target="_blank" rel="noopener">View</a>
         <form action="/admin/products/<%= p.id %>?_method=DELETE" method="POST" onsubmit="return confirm('Move this design to deleted?');">
           <input type="hidden" name="_csrf" value="<%= csrfToken %>">

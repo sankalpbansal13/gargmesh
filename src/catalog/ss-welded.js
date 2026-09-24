@@ -1,171 +1,105 @@
-const { loadContent, mat } = require('./helpers');
-
-const content = loadContent('ss-welded');
+const { mat, sku, hub, NCR_FAQ } = require('./helpers');
+const { gaugeTable } = require('./gauges');
 
 const MATERIALS = [
-  mat('ss-304', 'Stainless Steel 304', 'SS 304', 'Premium stainless weld mesh for coastal, food-adjacent and long-life outdoor duty.', {
+  mat('mild-steel', 'Mild Steel', 'MS', 'Mild steel welded mesh. Coat for outdoor life.', {
     sort_order: 1,
-    best_for: 'Guards, cages, fencing and railings where corrosion resistance matters.',
-    detail: 'SS 304 is the premium stainless grade. Prefer 304 for coastal, washdown-adjacent and long outdoor life. Confirm opening, clear vs pitch, and wire mm/SWG on the RFQ.'
+    best_for: 'Economy guards, cages and panels.',
+    detail: 'MS on the five stock openings. Usual rolls 3, 4 and 5 ft. Specials on order.'
   }),
-  mat('ss-201', 'Stainless Steel 201', 'SS 201 (SS 202 trade alias)', 'Economy stainless weld mesh for indoor and cost-sensitive stacks.', {
+  mat('gi', 'GI (Galvanised)', 'GI', 'Zinc-coated welded mesh for outdoor use.', {
     sort_order: 2,
-    best_for: 'Indoor / covered economy SS weldmesh where 304 is not required.',
-    detail: 'SS 201 is our stocked economy stainless. “SS 202” in Indian trade often maps here — write the grade you need on the RFQ. Confirm aperture, wire and form (roll/panel).'
+    best_for: 'Outdoor fencing and damp sites.',
+    detail: 'GI on the five stock openings. Usual rolls 3, 4 and 5 ft. Specials on order.'
   }),
-  mat('mild-steel', 'Mild Steel', 'MS', 'Mild steel welded mesh for economy industrial guards, cages and fencing.', {
+  mat('ss-304', 'Stainless Steel 304', 'SS 304', 'SS 304 welded mesh.', {
     sort_order: 3,
-    best_for: 'Economy guards, cages and site fencing where stainless is not required.',
-    detail: 'MS welded mesh matches the same opening/wire matrix as stainless. Paint or coat for outdoor life. Confirm opening, wire and roll/panel on the RFQ.'
+    best_for: 'Long-life and washdown-adjacent mesh.',
+    detail: 'SS 304 on the five stock openings. Usual rolls 3, 4 and 5 ft. Specials on order.'
   }),
-  mat('gi', 'GI (Galvanised)', 'GI / Galvanized Iron', 'Zinc-coated welded mesh for outdoor fencing and corrosion-prone sites.', {
+  mat('ss-201', 'Stainless Steel 201', 'SS 201', 'SS 201 welded mesh.', {
     sort_order: 4,
-    best_for: 'Outdoor fencing, compounds and damp sites needing zinc protection.',
-    detail: 'GI welded mesh for outdoor duty. Published g/sqft is SS/MS reference — GI is typically ~5% heavier. Confirm opening, wire and form on the RFQ.'
+    best_for: 'Economy stainless welded mesh.',
+    detail: 'SS 201 on the five stock openings. Usual rolls 3, 4 and 5 ft. Specials on order.'
   })
 ];
 
-function parseWeight(line) {
-  const m = String(line).match(/~([\d.]+)\s*g\/sqft/i);
-  return m ? Number(m[1]) : null;
-}
-
-function parseRollKg(line) {
-  const m = String(line).match(/~([\d.]+)\s*kg\/roll/i);
-  return m ? Number(m[1]) : null;
-}
-
-function parseSku(line, index) {
-  const n = index + 1;
-  const pad = String(n).padStart(2, '0');
-  const mm = line.match(/\((\d+(?:\.\d+)?)\s*[×x]\s*(\d+(?:\.\d+)?)(?:\s*[×x]\s*(\d+(?:\.\d+)?))?\s*mm\)/i);
-  const openA = mm ? Number(mm[1]) : null;
-  const openB = mm ? Number(mm[2]) : null;
-  const wire = mm && mm[3] ? Number(mm[3]) : null;
-  const square = openA && openB && openA === openB;
-  const name = 'Welded Mesh ' + pad;
-  const slug = 'ss-welded-' + pad;
-  const weight_g_sqft = parseWeight(line);
-  return {
-    slug,
-    name,
-    hole_shape: square ? 'Square' : 'Rectangular',
-    hole_mm: openA,
-    pitch_mm: wire,
-    angle_deg: openB && !square ? openB : null,
-    open_area_pct: null,
-    short_desc: line,
-    weight_g_sqft,
-    description: name + '. ' + line + ' Welded mesh from Garg Industrial Mesh, Sector 9 Noida — available in SS 304, SS 201, Mild Steel and GI.',
-    applications: 'Guards, fencing, cages, railings, partitions',
-    faq: JSON.stringify([
-      { q: 'What is ' + name + '?', a: line },
-      { q: 'Which materials / grades?', a: 'SS 304 (premium), SS 201 (economy), Mild Steel and GI. Confirm grade, clear vs pitch opening, wire mm/SWG, roll or panel on the RFQ.' },
-      { q: 'What does the weight mean?', a: weight_g_sqft != null ? 'Published ≈' + weight_g_sqft + ' g/sqft is the SS/MS reference for a 4′×50′ roll. GI is typically about 5% heavier. Treat as planning weight.' : 'Weights are published as g/sqft and kg/roll for a 4′×50′ reference roll — confirm on RFQ.' },
-      { q: 'Do you deliver in Delhi NCR?', a: 'Yes — from Sector 9, Noida across Noida, Greater Noida, Delhi, Ghaziabad, Faridabad and Gurugram.' }
-    ]),
-    meta_title: name + ' Noida | SS MS GI | Garg',
-    meta_description: 'Buy ' + name + ' in Noida — ' + line.split('—')[0].trim() + '. SS 304, SS 201, MS & GI. Quote 9910238277.',
-    meta_keywords: 'welded mesh, weldmesh, ' + name.toLowerCase() + ', ss welded mesh noida, ms welded mesh',
-    sort_order: n,
-    featured: n <= 4 ? 1 : 0,
-    materials: MATERIALS.map((m) => ({ ...m })),
-    spec_kind: 'welded',
-    open_b_mm: openB
-  };
-}
-
-function sizeWeightTable(itemList) {
-  const header = ['Opening / SKU', 'Wire', '~g/sqft', '~kg/roll'];
-  const rows = (itemList || []).map((line) => {
-    const before = String(line).split('—')[0].trim();
-    const mm = before.match(/\((\d+(?:\.\d+)?)\s*[×x]\s*(\d+(?:\.\d+)?)(?:\s*[×x]\s*(\d+(?:\.\d+)?))?\s*mm\)/i);
-    const openLabel = mm
-      ? (mm[3] ? mm[1] + ' × ' + mm[2] + ' mm' : mm[1] + ' × ' + mm[2] + ' mm')
-      : before;
-    const wire = mm && mm[3] ? mm[3] + ' mm' : (before.match(/×\s*(\d+g|[\d.]+\s*mm)/i) || [])[1] || 'See SKU';
-    const g = parseWeight(line);
-    const kg = parseRollKg(line);
-    return [
-      openLabel,
-      wire,
-      g != null ? String(g) : '—',
-      kg != null ? String(kg) : '—'
-    ];
-  });
-  return [header, ...rows];
-}
-
-function guideSections() {
-  const items = content.itemList || [];
-  return [
-    {
-      id: 'sizes',
-      title: 'Size & weight',
-      body: 'Stock welded-mesh SKUs with published planning weights for a 4 ft × 50 ft reference roll (≈200 sq ft). Approx. roll kg ≈ g/sqft × 0.2. GI is typically ~5% heavier than the SS/MS figure.',
-      tables: [sizeWeightTable(items)]
-    },
-    {
-      id: 'materials',
-      title: 'Materials',
-      body: 'Same opening/wire matrix across grades — choose material for corrosion life and budget.',
-      tables: [[
-        ['Material', 'Grades', 'Best for'],
-        ['Stainless Steel 304', 'SS 304', 'Coastal, washdown, long outdoor life'],
-        ['Stainless Steel 201', 'SS 201 (202 trade alias)', 'Indoor / economy stainless'],
-        ['Mild Steel', 'MS', 'Economy industrial duty — coat for outdoors'],
-        ['GI (Galvanised)', 'GI', 'Outdoor fencing and damp sites']
-      ]]
-    },
-    {
-      id: 'faq',
-      title: 'Frequently asked questions',
-      body: 'Short answers for welded mesh RFQs.',
-      faqs: [
-        {
-          q: 'Which materials do you stock?',
-          a: 'SS 304, SS 201, Mild Steel and GI on the same size matrix. Write the grade clearly on the RFQ (if your BOQ says SS 202, tell us — we map trade aliases).'
-        },
-        {
-          q: 'Clear opening or pitch?',
-          a: 'Say which you mean. Clear opening is the free space between wires; pitch is centre-to-centre. Wrong assumption changes the wire and the fit.'
-        },
-        {
-          q: 'How do I use g/sqft?',
-          a: 'Our roll reference is 4′×50′ = 200 sq ft, so approx. kg/roll ≈ g/sqft × 0.2. For panels: kg ≈ (g/sqft ÷ 1000) × (width_ft × length_ft). GI ≈ SS/MS × 1.05.'
-        },
-        {
-          q: 'Rolls or panels?',
-          a: 'Both. State form, opening, wire mm/SWG, grade and quantity on the RFQ.'
-        },
-        {
-          q: 'Do you deliver in Delhi NCR?',
-          a: 'Yes — from Sector 9, Noida across Noida, Greater Noida, Delhi, Ghaziabad, Faridabad and Gurugram.'
-        }
-      ]
-    }
-  ];
-}
+const OPENINGS = [
+  { slug: 'ss-welded-01', name: '1″ × 1″ × 10 g', shape: 'Square', spec: '1″×1″ × 10g (3 mm)' },
+  { slug: 'ss-welded-02', name: '1″ × 1″ × 12 g', shape: 'Square', spec: '1″×1″ × 12g (2.5 mm)' },
+  { slug: 'ss-welded-03', name: '2″ × 2″ × 10 g', shape: 'Square', spec: '2″×2″ × 10g (3 mm)' },
+  { slug: 'ss-welded-04', name: '1″ × 3″ × 8 g', shape: 'Rectangular', spec: '1″×3″ × 8g (4 mm)' },
+  { slug: 'ss-welded-05', name: '4″ × 4″ × 10 g', shape: 'Square', spec: '4″×4″ × 10g (3 mm)' }
+];
 
 function buildCategory() {
-  const designs = (content.itemList || []).map(parseSku);
-  return {
+  const designs = OPENINGS.map((o, i) => sku({
+    slug: o.slug,
+    name: 'Welded Mesh ' + o.spec,
+    hole_shape: o.shape,
+    short_desc: o.spec + ' · MS, GI, SS 304, SS 201 · rolls 3 / 4 / 5 ft',
+    description: 'Welded mesh ' + o.spec + '. Metals: mild steel, GI, SS 304 and SS 201. Usual roll widths 3, 4 and 5 ft. Other sizes on order. From Sector 9, Noida.',
+    applications: 'Fencing, guards, cages, partitions',
+    faqs: [
+      { q: 'Which opening is this?', a: o.spec + '.' },
+      { q: 'Which metals and roll widths?', a: 'MS, GI, SS 304 and SS 201. Usual rolls 3, 4 and 5 ft. Specials on order.' },
+      NCR_FAQ
+    ],
+    meta_title: o.spec + ' Welded Mesh Noida | Garg',
+    meta_description: 'Welded mesh ' + o.spec + ' in MS, GI, SS 304 and SS 201. Noida. Quote 9910238277.',
+    meta_keywords: 'welded mesh noida, ' + o.spec + ', gi weld mesh, ms welded mesh',
+    sort_order: i + 1,
+    featured: i < 2,
+    materials: MATERIALS,
+    spec_kind: 'welded'
+  }));
+
+  return hub({
     slug: 'ss-welded-mesh',
     name: 'Welded Mesh',
-    short_desc: '29 weldmesh SKUs in SS 304, SS 201, MS and GI — rolls and panels from Sector 9 Noida.',
-    description: 'Welded mesh from Garg Industrial Mesh, Sector 9 Noida — stainless (SS 304 / SS 201), mild steel and GI on a published 29-SKU opening & wire matrix with g/sqft and roll weights.',
-    guide_sections: JSON.stringify(guideSections()),
-    meta_title: 'Welded Mesh Noida | SS MS GI | Garg Industrial Mesh',
-    meta_description: 'Welded mesh supplier in Noida — SS 304, SS 201, MS & GI. 29 stock sizes with g/sqft weights. Quote 9910238277.',
-    meta_keywords: 'welded mesh noida, ss welded mesh, ms welded mesh, gi weldmesh, weld mesh jali',
+    short_desc: 'Five openings in MS, GI, SS 304 and SS 201. Usual rolls 3, 4 and 5 ft.',
+    description: 'Welded mesh from Garg Industrial Mesh, Sector 9 Noida. Five stock openings only, in mild steel, GI, SS 304 and SS 201. Usual roll widths 3, 4 and 5 ft. Specials on order.',
+    meta_title: 'Welded Mesh Noida | MS GI SS | Garg',
+    meta_description: 'Welded mesh in Noida — five openings in MS, GI, SS 304 and SS 201. Quote 9910238277.',
+    meta_keywords: 'welded mesh noida, weldmesh, gi welded mesh, ss welded mesh',
     sort_order: 4,
-    featured: 1,
     group: 'sheet',
     designs,
-    cover_image: content.images && content.images[0] ? content.images.find((i) => /hero/i.test(i)) || content.images[0] : null,
-    content_folder: content.folder,
-    materials_catalog: MATERIALS
-  };
+    materials: MATERIALS,
+    guide: [
+      {
+        id: 'openings',
+        title: 'Five stock openings',
+        body: 'These five openings replace the old long size list. Wire size uses the Garg gauge chart. Usual rolls are 3, 4 and 5 ft. Specials on order.',
+        tables: [
+          [
+            ['Opening', 'Wire'],
+            ['1″ × 1″', '10 g (3 mm)'],
+            ['1″ × 1″', '12 g (2.5 mm)'],
+            ['2″ × 2″', '10 g (3 mm)'],
+            ['1″ × 3″', '8 g (4 mm)'],
+            ['4″ × 4″', '10 g (3 mm)']
+          ],
+          gaugeTable(),
+          [
+            ['Also state', 'Options'],
+            ['Metal', 'MS · GI · SS 304 · SS 201'],
+            ['Roll width', '3 ft · 4 ft · 5 ft usual. Specials on order.']
+          ]
+        ]
+      },
+      {
+        id: 'faq',
+        title: 'Frequently asked questions',
+        body: 'What to send with a welded mesh enquiry.',
+        faqs: [
+          { q: 'How many openings are in stock?', a: 'Five: 1″×1″×10g, 1″×1″×12g, 2″×2″×10g, 1″×3″×8g and 4″×4″×10g.' },
+          { q: 'Is powder-coated welded mesh the same list?', a: 'Yes. Powder-coated welded mesh uses these same five openings. It is a separate product type.' },
+          NCR_FAQ
+        ]
+      }
+    ]
+  });
 }
 
-module.exports = { buildCategory, MATERIALS, parseWeight };
+module.exports = { buildCategory, MATERIALS, OPENINGS };

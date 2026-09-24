@@ -1,84 +1,101 @@
-const { loadContent, guideFromContent, mat } = require('./helpers');
+const { loadContent, mat, sku, hub, NCR_FAQ } = require('./helpers');
 
 const content = loadContent('machhar-jali');
 
+const WIDTHS = '2, 2.5, 3, 3.5, 4 and 5 ft';
+
 const MATERIALS = [
-  mat('aluminium', 'Aluminium', 'Aluminium mosquito / door mesh', 'Lightweight aluminium machhar jali for doors and windows.', {
+  mat('gi', 'GI (Galvanised)', 'GI', 'Zinc-coated woven door mesh.', {
     sort_order: 1,
-    best_for: 'Door and window mosquito mesh, channel widths 2–6 ft.',
-    detail: 'Aluminium woven mosquito mesh (darwaze wali jali). Confirm mesh count, roll width (2–6 ft incl. half-feet) and quantity on the RFQ.'
+    best_for: 'Door and window insect mesh where GI is specified.',
+    detail: 'GI 14×14 machhar jali. Widths ' + WIDTHS + '.'
   }),
-  mat('ss-304', 'Stainless Steel 304', 'SS 304', 'Premium SS woven mosquito / insect screen for doors and balconies.', {
+  mat('aluminium', 'Aluminium', 'Aluminium', 'Lightweight aluminium woven door mesh.', {
     sort_order: 2,
-    best_for: 'Long-life door/window insect screens and balcony cloth.',
-    detail: 'SS 304 woven machhar jali for durability. Confirm mesh count (e.g. 18×16, 18×18, 20×20), width and black coat if required.'
+    best_for: 'Door and window mosquito mesh.',
+    detail: 'Aluminium 14×14 machhar jali. Widths ' + WIDTHS + '.'
   }),
-  mat('ss-202', 'Stainless Steel 202', 'SS 202 economy', 'Economy stainless machhar jali for cost-sensitive door/window jobs.', {
+  mat('ss-304', 'Stainless Steel 304', 'SS 304', 'SS 304 woven door mesh, supplied in rolls with a grade sticker.', {
     sort_order: 3,
-    best_for: 'Economy SS insect mesh where 304 is not specified.',
-    detail: 'SS 202 economy woven mosquito mesh in common roll widths 2–6 ft. Confirm mesh count and width on the RFQ.'
+    best_for: 'Long-life door and window insect screens.',
+    detail: 'SS 304 14×14 machhar jali in rolls. Each 304 roll carries a grade sticker. Widths ' + WIDTHS + '.'
+  }),
+  mat('ss-201', 'Stainless Steel 201', 'SS 201', 'SS 201 woven door mesh.', {
+    sort_order: 4,
+    best_for: 'Economy stainless door mesh.',
+    detail: 'SS 201 14×14 machhar jali. Widths ' + WIDTHS + '.'
+  }),
+  mat('ss-202', 'Stainless Steel 202', 'SS 202', 'SS 202 woven door mesh.', {
+    sort_order: 5,
+    best_for: 'Economy stainless door mesh when 202 is written on the order.',
+    detail: 'SS 202 14×14 machhar jali. Widths ' + WIDTHS + '.'
   })
 ];
 
-const MESHES = [
-  { mesh: '14×14', short: '14×14 count — common ALU door/window mesh' },
-  { mesh: '16×16', short: '16×16 count — denser insect screen' },
-  { mesh: '18×16', short: '18×16 count — popular SS/ALU insect mesh' },
-  { mesh: '18×18', short: '18×18 fine insect screen' },
-  { mesh: '20×20', short: '20×20 fine insect screen' }
-];
-
 function buildCategory() {
-  const designs = MESHES.map((m, i) => {
-    const n = i + 1;
-    const pad = String(n).padStart(2, '0');
-    const name = 'Door Machhar Jali ' + pad;
-    const slug = 'machhar-' + pad;
-    return {
-      slug,
-      name,
+  const designs = [
+    sku({
+      slug: 'machhar-01',
+      name: 'Door Machhar Jali 14×14',
       hole_shape: 'Woven',
-      hole_mm: null,
-      pitch_mm: null,
-      angle_deg: null,
-      open_area_pct: null,
-      short_desc: m.mesh + ' mesh · ' + m.short + ' · roll widths 2–6 ft',
-      description: name + ' — ' + m.mesh + ' woven machhar jali (mosquito / door mesh). ' + m.short + '. Available in Aluminium, SS 304 and SS 202. Roll widths 2–6 ft including half-foot sizes from Sector 9 Noida.',
-      applications: 'Doors, windows, kitchen, balcony insect screens',
-      faq: JSON.stringify([
-        { q: 'What mesh count is this?', a: name + ' is ' + m.mesh + ' mesh. ' + m.short + '.' },
-        { q: 'What widths?', a: 'Roll widths typically 2–6 ft including half-foot sizes (e.g. 2.5, 3.5, 4.5 ft). State width on the RFQ.' },
-        { q: 'Which materials?', a: 'Aluminium, SS 304 and SS 202.' },
-        { q: 'NCR delivery?', a: 'Yes — from Sector 9, Noida across Delhi NCR.' }
-      ]),
-      meta_title: name + ' Noida | Garg',
-      meta_description: 'Buy ' + name + ' (' + m.mesh + ') aluminium & SS machhar jali in Noida. Quote 9910238277.',
-      meta_keywords: 'machhar jali, mosquito mesh, ' + name.toLowerCase() + ', door mesh noida',
-      sort_order: n,
-      featured: n <= 2 ? 1 : 0,
-      materials: MATERIALS.map((x) => ({ ...x })),
-      spec_kind: 'machhar',
-      mesh_label: m.mesh
-    };
-  });
+      short_desc: '14×14 only · widths ' + WIDTHS + ' · GI, aluminium, SS 304, SS 201, SS 202',
+      description: 'Woven door machhar jali (mosquito / wire mesh), 14×14 mesh only. Widths ' + WIDTHS + '. Metals: GI, aluminium, SS 304, SS 201 and SS 202. SS 304 is supplied in rolls with a grade sticker. From Sector 9, Noida.',
+      applications: 'Doors, windows, kitchen and balcony insect screens',
+      faqs: [
+        { q: 'Which mesh counts do you stock?', a: '14×14 only.' },
+        { q: 'Which widths?', a: WIDTHS + '.' },
+        { q: 'How is SS 304 packed?', a: 'SS 304 machhar jali is supplied in rolls with a grade sticker.' },
+        NCR_FAQ
+      ],
+      meta_title: '14×14 Door Machhar Jali Noida | Garg',
+      meta_description: '14×14 door machhar jali in GI, aluminium, SS 304, 201 and 202. Widths 2 to 5 ft. Noida. Quote 9910238277.',
+      meta_keywords: 'machhar jali, 14x14 door mesh, mosquito mesh noida, ss 304 machhar jali',
+      sort_order: 1,
+      featured: true,
+      materials: MATERIALS,
+      spec_kind: 'machhar'
+    })
+  ];
 
-  return {
+  return hub({
     slug: 'door-machhar-jali',
     name: 'Door Machhar Jali',
-    short_desc: 'Aluminium & SS woven mosquito / door mesh — mesh counts 14×14 to 20×20, widths 2–6 ft.',
-    description: content.meta_description,
-    guide_sections: JSON.stringify(guideFromContent(content)),
-    meta_title: content.og_title || content.title,
-    meta_description: content.meta_description,
-    meta_keywords: content.meta_keywords || 'machhar jali noida, mosquito mesh, door mesh',
+    short_desc: '14×14 woven door and window mesh in GI, aluminium, SS 304, SS 201 and SS 202. Widths 2–5 ft.',
+    description: 'Door machhar jali from Garg Industrial Mesh, Sector 9 Noida. 14×14 mesh only. Widths ' + WIDTHS + '. GI, aluminium, SS 304, SS 201 and SS 202. SS 304 rolls include a grade sticker.',
+    meta_title: 'Door Machhar Jali Noida | 14×14 | Garg',
+    meta_description: '14×14 machhar jali in GI, aluminium and SS 304 / 201 / 202. Widths 2, 2.5, 3, 3.5, 4 and 5 ft. Quote 9910238277.',
+    meta_keywords: 'machhar jali noida, door mesh, 14x14 mosquito mesh, wire mesh for door',
     sort_order: 11,
-    featured: 1,
     group: 'animal',
     designs,
     cover_image: content.images.find((i) => /hero|roll|product/i.test(i)) || content.images[0],
     content_folder: content.folder,
-    materials_catalog: MATERIALS
-  };
+    materials: MATERIALS,
+    guide: [
+      {
+        id: 'sizes',
+        title: 'Mesh and widths',
+        body: 'One mesh count. Pick the metal on the next step. SS 304 leaves as rolls with a grade sticker.',
+        tables: [[
+          ['Spec', 'Stock'],
+          ['Mesh', '14×14 only'],
+          ['Widths', WIDTHS],
+          ['Metals', 'GI · Aluminium · SS 304 · SS 201 · SS 202'],
+          ['SS 304 pack', 'Rolls with grade sticker']
+        ]]
+      },
+      {
+        id: 'faq',
+        title: 'Frequently asked questions',
+        body: 'What to send with a machhar jali enquiry.',
+        faqs: [
+          { q: 'Do you stock 16×16, 18×18 or 20×20 door mesh?', a: 'No. Door machhar jali is 14×14 only.' },
+          { q: 'Is 6 ft width a stock size?', a: 'Stock widths are ' + WIDTHS + '.' },
+          NCR_FAQ
+        ]
+      }
+    ]
+  });
 }
 
 module.exports = { buildCategory, MATERIALS };

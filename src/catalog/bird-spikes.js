@@ -1,4 +1,4 @@
-const { loadContent, guideFromContent, mat } = require('./helpers');
+const { loadContent, guideFromContent, mat, sku, hub, NCR_FAQ } = require('./helpers');
 
 const content = loadContent('bird-spikes');
 
@@ -130,53 +130,102 @@ function buildMonkeyCategory() {
   };
 }
 
-function buildNetCategory() {
-  const designs = [
-    designBase({
-      slug: 'anti-bird-net',
-      name: 'Anti-Bird Net',
-      short_desc: 'UV nylon balcony and façade bird nets',
-      description: 'Anti-bird netting for balconies and façades. Confirm mesh size, colour and covered area on the RFQ. Supplied from Sector 9 Noida across Delhi NCR.',
-      applications: 'Balconies, courtyards, façades',
-      meta_title: 'Anti-Bird Net Noida | Garg Industrial Mesh',
-      meta_description: 'Buy UV nylon anti-bird net in Noida for balconies and façades. Quote 9910238277.',
-      meta_keywords: 'anti bird net noida, bird netting, uv nylon bird net',
-      sort_order: 1,
-      materials: [{ ...MAT_NET }]
-    })
-  ];
+const BIRD_COLOURS = [
+  mat('bird-white', 'White', 'White bird net', 'White bird net.', { sort_order: 1 }),
+  mat('bird-green', 'Green', 'Green bird net', 'Green bird net.', { sort_order: 2 }),
+  mat('bird-blue', 'Blue', 'Blue bird net', 'Blue bird net — available in every stock size.', { sort_order: 3 })
+];
 
-  return {
+const BIRD_ROLLS = [
+  ['anti-bird-net', '10 ft × 100 ft roll'],
+  ['bird-roll-12x100', '12 ft × 100 ft roll'],
+  ['bird-roll-15x100', '15 ft × 100 ft roll']
+];
+
+const BIRD_PANELS = [
+  '8×12',
+  '10×10', '10×12', '10×15', '10×20', '10×25', '10×30',
+  '12×12', '12×15', '12×20', '12×25', '12×30',
+  '15×15', '15×20', '15×25', '15×30'
+];
+
+function buildNetCategory() {
+  const designs = [];
+  BIRD_ROLLS.forEach(([slug, label], i) => {
+    designs.push(sku({
+      slug,
+      name: 'Bird net ' + label,
+      short_desc: label + ' · white, green, blue',
+      description: 'Bird net roll ' + label + '. Colours: white, green and blue. Blue is available in every stock size. From Sector 9, Noida.',
+      applications: 'Balconies, courtyards, façades',
+      meta_title: 'Bird Net ' + label + ' Noida | Garg',
+      meta_description: 'Bird net ' + label + ' in white, green and blue. Noida. Quote 9910238277.',
+      meta_keywords: 'bird net noida, anti bird net, ' + label,
+      sort_order: i + 1,
+      featured: i === 0,
+      materials: BIRD_COLOURS,
+      spec_kind: 'bird-net'
+    }));
+  });
+  BIRD_PANELS.forEach((label, i) => {
+    const slug = 'bird-panel-' + label.replace('×', 'x');
+    designs.push(sku({
+      slug,
+      name: 'Bird net panel ' + label + ' ft',
+      short_desc: label + ' ft panel · white, green, blue',
+      description: 'Bird net panel ' + label + ' ft. Colours: white, green and blue. Blue is available in every stock size. From Sector 9, Noida.',
+      applications: 'Balconies, courtyards, façades',
+      meta_title: 'Bird Net Panel ' + label + ' Noida | Garg',
+      meta_description: 'Bird net panel ' + label + ' ft in white, green and blue. Noida. Quote 9910238277.',
+      meta_keywords: 'bird net panel, ' + label + ' bird net, noida',
+      sort_order: BIRD_ROLLS.length + i + 1,
+      materials: BIRD_COLOURS,
+      spec_kind: 'bird-net'
+    }));
+  });
+
+  return hub({
     slug: 'anti-bird-net',
-    name: 'Anti-Bird Net',
-    short_desc: 'UV nylon anti-bird nets for balconies, courtyards and façades.',
-    description: 'Anti-bird netting in UV-stabilised nylon from Garg Industrial Mesh, Sector 9 Noida — balcony and façade bird exclusion across Delhi NCR.',
-    guide_sections: JSON.stringify([
-      {
-        id: 'what',
-        title: 'What is anti-bird net?',
-        body: 'Anti-bird net is UV nylon mesh tensioned over balconies, courtyards or façades to exclude birds without spikes. Confirm mesh size, colour and area on your RFQ.'
-      },
-      {
-        id: 'faq',
-        title: 'Frequently asked questions',
-        body: 'Common questions for anti-bird net orders.',
-        faqs: (content.faqs || []).filter((f) => /net/i.test(f.q + f.a)).slice(0, 5).concat(
-          (content.faqs || []).slice(0, 3)
-        ).slice(0, 5)
-      }
-    ]),
-    meta_title: 'Anti-Bird Net Noida | UV Nylon | Garg',
-    meta_description: 'Anti-bird net supplier in Noida — UV nylon balcony and façade nets. Quote 9910238277.',
-    meta_keywords: 'anti bird net noida, bird netting noida',
+    name: 'Bird Net',
+    short_desc: 'White, green and blue. Rolls 10, 12 and 15 ft × 100 ft, plus stock panels. Blue is every size.',
+    description: 'Bird net from Garg Industrial Mesh, Sector 9 Noida. Colours: white, green and blue. Blue is stocked in every size on this list. Rolls: 10×100, 12×100 and 15×100 ft. Panels as listed below.',
+    meta_title: 'Bird Net Noida | White Green Blue | Garg',
+    meta_description: 'Bird net in Noida — white, green and blue. Rolls 10, 12 and 15 ft by 100 ft, plus panels. Quote 9910238277.',
+    meta_keywords: 'bird net noida, anti bird net, balcony bird net',
     sort_order: 10,
-    featured: 1,
     group: 'animal',
     designs,
     cover_image: content.images.find((i) => /hero/i.test(i)) || content.images[0],
     content_folder: content.folder,
-    materials_catalog: [MAT_NET]
-  };
+    materials: BIRD_COLOURS,
+    guide: [
+      {
+        id: 'sizes',
+        title: 'Rolls and panels',
+        body: 'White, green and blue. Blue uses the full size list — it is not limited to one size.',
+        tables: [
+          [
+            ['Rolls', 'Length'],
+            ['10 ft wide', '100 ft'],
+            ['12 ft wide', '100 ft'],
+            ['15 ft wide', '100 ft']
+          ],
+          [
+            ['Panels (ft)', 'Colours'],
+            ...BIRD_PANELS.map((p) => [p, 'White · green · blue'])
+          ]
+        ]
+      },
+      {
+        id: 'faq',
+        title: 'Frequently asked questions',
+        faqs: [
+          { q: 'Is blue only one size?', a: 'No. Blue is available in every roll and panel on this list, same as white and green.' },
+          NCR_FAQ
+        ]
+      }
+    ]
+  });
 }
 
 /** @deprecated Prefer buildBirdCategory / buildMonkeyCategory / buildNetCategory */
