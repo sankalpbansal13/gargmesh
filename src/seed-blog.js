@@ -2,7 +2,7 @@ const db = require('./db');
 
 /**
  * Idempotent import of JS module posts into SQLite.
- * Only inserts missing slugs — never overwrites admin edits.
+ * Inserts missing slugs. Refreshes seeded posts. Skips any post saved in the admin panel.
  */
 function ensureBlogPosts() {
   let modules;
@@ -14,22 +14,26 @@ function ensureBlogPosts() {
   }
   if (!modules.length) return;
 
-  const exists = db.prepare('SELECT id FROM posts WHERE slug = ?');
+  const exists = db.prepare('SELECT id, admin_edited FROM posts WHERE slug = ?');
   const softDeleted = db.prepare(
     "SELECT id FROM posts WHERE deleted = 1 AND (slug = ? OR slug LIKE ?)"
   );
   const insert = db.prepare(`
-    INSERT INTO posts (slug, title, date, author, excerpt, meta_description, meta_keywords, tldr, body, faq, deleted)
-    VALUES (@slug, @title, @date, @author, @excerpt, @meta_description, @meta_keywords, @tldr, @body, @faq, 0)
+    INSERT INTO posts (slug, title, date, author, excerpt, meta_description, meta_keywords, tldr, body, faq, deleted, admin_edited)
+    VALUES (@slug, @title, @date, @author, @excerpt, @meta_description, @meta_keywords, @tldr, @body, @faq, 0, 0)
+  `);
+  const update = db.prepare(`
+    UPDATE posts SET title=@title, date=@date, author=@author, excerpt=@excerpt,
+      meta_description=@meta_description, meta_keywords=@meta_keywords, tldr=@tldr, body=@body, faq=@faq
+    WHERE id=@id AND IFNULL(admin_edited, 0) = 0
   `);
 
   let added = 0;
+  let refreshed = 0;
   const tx = db.transaction(() => {
     for (const p of modules) {
       if (!p || !p.slug || !p.title) continue;
-      if (exists.get(p.slug)) continue;
-      if (softDeleted.get(p.slug, p.slug + '-deleted-%')) continue;
-      insert.run({
+      const row = {
         slug: p.slug,
         title: p.title,
         date: p.date || '',
@@ -40,15 +44,24 @@ function ensureBlogPosts() {
         tldr: JSON.stringify(Array.isArray(p.tldr) ? p.tldr : []),
         body: JSON.stringify(Array.isArray(p.body) ? p.body : []),
         faq: JSON.stringify(Array.isArray(p.faq) ? p.faq : [])
-      });
+      };
+      const current = exists.get(p.slug);
+      if (current) {
+        if (current.admin_edited) continue;
+        const result = update.run(Object.assign({ id: current.id }, row));
+        if (result.changes) refreshed++;
+        continue;
+      }
+      if (softDeleted.get(p.slug, p.slug + '-deleted-%')) continue;
+      insert.run(row);
       added++;
     }
   });
   tx();
 
   const total = db.prepare('SELECT COUNT(*) as c FROM posts WHERE deleted = 0').get().c;
-  if (added) {
-    console.log('Seed: imported ' + added + ' blog post(s) into SQLite (total live: ' + total + ').');
+  if (added || refreshed) {
+    console.log('Seed: blog posts added ' + added + ', refreshed ' + refreshed + ' (total live: ' + total + ').');
   } else {
     console.log('Seed: blog posts already present (' + total + ').');
   }

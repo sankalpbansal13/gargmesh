@@ -3,7 +3,7 @@ module.exports = {
   title: 'Perforated Sheet Hole Size Guide: Round vs Square vs Slotted',
   date: 'Jul 2026',
   author: 'Garg Industrial Mesh Team',
-  excerpt: 'Round, square and slotted holes each suit different jobs. This guide compares perforated sheet hole types, sizes and open-area to help you specify correctly.',
+  excerpt: 'Round, square and slotted holes each suit different jobs. This guide compares perforated sheet hole types, sizes and open area to help you specify correctly.',
   meta_description: 'Perforated sheet hole size guide: round vs square vs slotted holes, open area and applications. Garg Industrial Mesh, Sector 9 Noida, helps you specify the right pattern. Call 9910238277.',
   meta_keywords: 'perforated sheet hole size, round vs square vs slotted perforated sheet, perforated sheet open area, perforated sheet noida',
   tldr: [

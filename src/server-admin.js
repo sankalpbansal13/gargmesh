@@ -526,8 +526,8 @@ app.post('/admin/posts', requireAuth, checkCsrf, (req, res) => {
     const tldrJson = JSON.stringify(tldrFromTextarea(b.tldr));
     const bodyJson = JSON.stringify(linesFromTextarea(b.body));
     db.prepare(`
-      INSERT INTO posts (slug, title, date, author, excerpt, meta_description, meta_keywords, tldr, body, faq, deleted)
-      VALUES (?,?,?,?,?,?,?,?,?,?,0)
+      INSERT INTO posts (slug, title, date, author, excerpt, meta_description, meta_keywords, tldr, body, faq, deleted, admin_edited)
+      VALUES (?,?,?,?,?,?,?,?,?,?,0,1)
     `).run(
       slug, b.title.trim(), (b.date || '').trim(), (b.author || 'Garg Industrial Mesh Team').trim(),
       (b.excerpt || '').trim(), (b.meta_description || '').trim(), (b.meta_keywords || '').trim(),
@@ -567,7 +567,7 @@ app.put('/admin/posts/:id', requireAuth, checkCsrf, (req, res) => {
     const tldrJson = JSON.stringify(tldrFromTextarea(b.tldr));
     const bodyJson = JSON.stringify(linesFromTextarea(b.body));
     db.prepare(`
-      UPDATE posts SET slug=?, title=?, date=?, author=?, excerpt=?, meta_description=?, meta_keywords=?, tldr=?, body=?, faq=?
+      UPDATE posts SET slug=?, title=?, date=?, author=?, excerpt=?, meta_description=?, meta_keywords=?, tldr=?, body=?, faq=?, admin_edited=1
       WHERE id=?
     `).run(
       slug, b.title.trim(), (b.date || '').trim(), (b.author || 'Garg Industrial Mesh Team').trim(),

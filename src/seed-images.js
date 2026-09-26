@@ -424,10 +424,57 @@ function ensureExclusiveProductPhotos() {
       images: [
         { file: 'pop-jali.png', cover: true, alt: 'Square POP plaster jali rolls — Garg Industrial Mesh' }
       ]
+    },
+    {
+      category: 'chain-link-mesh',
+      sortStart: 4,
+      images: [
+        { file: 'chain-link-pvc-dark-green.png', cover: false, alt: 'Dark green PVC powder-coated chain link — Garg Industrial Mesh' },
+        { file: 'chain-link-pvc-light-green.png', cover: false, alt: 'Light green PVC powder-coated chain link — Garg Industrial Mesh' },
+        { file: 'chain-link-pvc-blue.png', cover: false, alt: 'Blue PVC powder-coated chain link — Garg Industrial Mesh' },
+        { file: 'chain-link-pvc-black.png', cover: false, alt: 'Black PVC powder-coated chain link — Garg Industrial Mesh' }
+      ]
+    },
+    {
+      category: 'binding-wire',
+      images: [
+        { file: 'binding-wire-ms.png', cover: true, alt: 'MS annealed binding wire coil — Garg Industrial Mesh' },
+        { file: 'binding-wire-gi.png', cover: false, alt: 'GI binding wire coil — Garg Industrial Mesh' }
+      ]
+    },
+    {
+      category: 'fiber-mesh',
+      images: [
+        { file: 'fiber-mesh-roll.png', cover: true, alt: 'AR fiberglass mesh roll — Garg Industrial Mesh' },
+        { file: 'fiber-mesh-closeup.png', cover: false, alt: 'Fiber mesh 5 by 5 mm grid — Garg Industrial Mesh' }
+      ]
+    },
+    {
+      category: 'powder-coated-welded-mesh',
+      images: [
+        { file: 'welded-pvc-dark-green.png', cover: true, alt: 'Dark green powder-coated welded mesh — Garg Industrial Mesh' },
+        { file: 'welded-pvc-blue.png', cover: false, alt: 'Blue powder-coated welded mesh — Garg Industrial Mesh' }
+      ]
     }
   ];
+  const perDesign = [
+    { category: 'number-perforated', slug: 'mill-3', file: 'mill-3-060.png', alt: '3 No. perforated sheet, 0.60 mm hole — Garg Industrial Mesh' },
+    { category: 'number-perforated', slug: 'mill-4', file: 'mill-4-080.png', alt: '4 No. perforated sheet, 0.80 mm hole — Garg Industrial Mesh' },
+    { category: 'number-perforated', slug: 'mill-5', file: 'mill-5-100.png', alt: '5 No. perforated sheet, 1 mm hole — Garg Industrial Mesh' },
+    { category: 'number-perforated', slug: 'mill-5h', file: 'mill-5h-120.png', alt: '5½ No. perforated sheet, 1.2 mm hole — Garg Industrial Mesh' },
+    { category: 'number-perforated', slug: 'mill-6', file: 'mill-6-140.png', alt: '6 No. perforated sheet, 1.4 mm hole — Garg Industrial Mesh' },
+    { category: 'number-perforated', slug: 'mill-6h', file: 'mill-6h-150.png', alt: '6½ No. perforated sheet, 1.5 mm hole — Garg Industrial Mesh' },
+    { category: 'number-perforated', slug: 'mill-7h', file: 'mill-7h-200.png', alt: '7½ No. perforated sheet, 2 mm hole — Garg Industrial Mesh' },
+    { category: 'number-perforated', slug: 'mill-8h', file: 'mill-8h-250.png', alt: '8½ No. perforated sheet, 2.5 mm hole — Garg Industrial Mesh' },
+    { category: 'number-perforated', slug: 'mill-10', file: 'mill-10-300.png', alt: '10 No. perforated sheet, 3 mm hole — Garg Industrial Mesh' },
+    { category: 'number-perforated', slug: 'mill-11', file: 'mill-11-400.png', alt: '11 No. perforated sheet, 4 mm hole — Garg Industrial Mesh' },
+    { category: 'number-perforated', slug: 'mill-12', file: 'mill-12-500.png', alt: '12 No. perforated sheet, 5 mm hole — Garg Industrial Mesh' },
+    { category: 'number-perforated', slug: 'mill-13', file: 'mill-13-600.png', alt: '13 No. perforated sheet, 6 mm hole — Garg Industrial Mesh' },
+    { category: 'number-perforated', slug: 'mill-14', file: 'mill-14-700.png', alt: '14 No. perforated sheet, 7 mm hole — Garg Industrial Mesh' },
+    { category: 'number-perforated', slug: 'mill-15', file: 'mill-15-800.png', alt: '15 No. perforated sheet, 8 mm hole — Garg Industrial Mesh' }
+  ];
   const getDesigns = db.prepare(
-    `SELECT d.id, d.name, COALESCE(d.admin_edited, 0) AS admin_edited FROM designs d
+    `SELECT d.id, d.name, d.slug, COALESCE(d.admin_edited, 0) AS admin_edited FROM designs d
      JOIN categories c ON c.id = d.category_id
      WHERE c.slug = ? AND c.deleted = 0 AND d.deleted = 0`
   );
@@ -453,10 +500,11 @@ function ensureExclusiveProductPhotos() {
     }
     for (const design of getDesigns.all(set.category)) {
       if (design.admin_edited) continue;
+      const sortStart = set.sortStart || 1;
       set.images.forEach((img, i) => {
         if (!fs.existsSync(path.join(uploadsDir, img.file))) return;
         if (!hasFile.get(design.id, img.file)) {
-          insert.run(design.id, img.file, '', img.alt, i + 1, 0, null, null, null);
+          insert.run(design.id, img.file, '', img.alt, sortStart + i, 0, null, null, null);
           linked++;
         }
       });
@@ -467,6 +515,23 @@ function ensureExclusiveProductPhotos() {
         setCover.run(design.id, cover.file);
       }
     }
+  }
+
+  for (const item of perDesign) {
+    const src = path.join(photoDir, item.file);
+    const before = fs.existsSync(path.join(uploadsDir, item.file));
+    if (copyIfNeeded(src, item.file, true) && !before) copied++;
+    if (!fs.existsSync(path.join(uploadsDir, item.file))) continue;
+    const design = getDesigns.all(item.category).find((d) => d.slug === item.slug);
+    if (!design || design.admin_edited) continue;
+    if (!hasFile.get(design.id, item.file)) {
+      insert.run(design.id, item.file, '', item.alt, 1, 0, null, null, null);
+      linked++;
+    }
+    const hasCover = db.prepare(
+      'SELECT COUNT(*) AS c FROM design_images WHERE design_id = ? AND is_cover = 1'
+    ).get(design.id).c;
+    if (!hasCover) setCover.run(design.id, item.file);
   }
 
   return { copied, linked };

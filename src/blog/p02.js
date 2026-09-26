@@ -26,9 +26,9 @@ module.exports = {
     '## GI vs PVC chain link: which should you choose?',
     'Bare **GI (galvanised) chain link** is the budget default and works well for most outdoor use in Delhi NCR. **PVC-coated chain link** costs a little more but resists rust far longer and looks cleaner, making it a popular upgrade for residential and commercial frontages where appearance matters. For a raw industrial boundary, GI is usually enough; for a visible frontage, PVC pays off.',
     '## What wire gauge should you specify?',
-    'Wire gauge (thickness) is the second cost driver. Thin wire around 1.6-2.0 mm keeps price down for light-duty use. Heavier wire from 2.5-4 mm costs more but stands up to impact and climbing - important for security perimeters. A cheap, thin fence is false economy on a site that needs real deterrence.',
+    'Wire thickness is the second cost driver. Garg chain link is 2.5 mm, 3 mm and 4 mm. The heavier wire costs more and stands up to impact and climbing, which matters on a security perimeter.',
     '## How is chain link fencing sold in Noida?',
-    'Chain link is sold in rolls - common widths 3.5 ft, 4 ft, 5 ft, 6 ft and 6.5 ft, lengths up to 18 m - and priced per running foot or per sq ft. Bulk project orders attract wholesale rates. Garg Industrial Mesh stocks GI and PVC chain link in multiple heights and gauges with same-day dispatch across Noida, Greater Noida and Delhi NCR.',
+    'Chain link is sold in 50 ft rolls. Heights are 3, 3.5, 4, 4.5, 5, 6, 7, 8, 9, 10, 11 and 12 ft. Openings are 2 inch, 3 inch and 4 inch, in GI or PVC. It is priced per running foot or per sq ft, and bulk project orders attract wholesale rates. Garg Industrial Mesh stocks these in Sector 9, Noida, with dispatch across Delhi NCR.',
     '## How to get an exact 2026 chain link fence quote',
     'For an accurate quote on your exact height, gauge, coating and quantity, call or WhatsApp Garg Industrial Mesh on 9910238277. Share the running length or area and we will price it same day, with delivery across Delhi NCR.'
   ],

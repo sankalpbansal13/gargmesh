@@ -8,7 +8,7 @@ module.exports = {
   meta_keywords: 'monkey protection noida, monkey spikes balcony, monkey netting, anti monkey spikes, monkey control delhi ncr',
   tldr: [
     'Monkeys enter balconies via railings, AC platforms and parapets - remove the climbing surface to stop them.',
-    'Monkey spikes make ledges un-climbable without harming the animals.',
+    'Monkey spikes make ledges unclimbable without harming the animals.',
     'Fine balcony mesh adds a secondary barrier across the opening for monkey-prone towers.',
     'Never leave food on the balcony; secure every climbing route, not just one ledge.',
     'Garg Industrial Mesh, Sector 9 Noida, supplies both - 9910238277.'
@@ -34,7 +34,7 @@ module.exports = {
     'Garg Industrial Mesh, Sector 9 Noida, supplies monkey spikes (GI and SS) and balcony mesh with fast delivery across Delhi NCR. Send a photo or describe your balcony and we will recommend the right combination - call or WhatsApp 9910238277.'
   ],
   faq: [
-    { q: 'Do monkey spikes harm the monkeys?', a: 'No. Monkey spikes make surfaces un-climbable without injuring the animals. They are a humane deterrent.' },
+    { q: 'Do monkey spikes harm the monkeys?', a: 'No. Monkey spikes make surfaces unclimbable without injuring the animals. They are a humane deterrent.' },
     { q: 'How much do monkey spikes cost in Noida?', a: 'Monkey spikes start around Rs55-75/ft, depending on material (GI vs SS) and length. SS lasts longest outdoors.' },
     { q: 'Will bird mesh stop monkeys?', a: 'A fine PVC-coated or nylon mesh across the opening helps stop monkeys entering, but spikes are still needed on climbing surfaces. The two work best together.' },
     { q: 'Where can I buy monkey spikes in Noida?', a: 'Garg Industrial Mesh at G-25, G Block, Sector 9, Noida stocks GI and SS monkey spikes plus balcony mesh. Call or WhatsApp 9910238277.' }

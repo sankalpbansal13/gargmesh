@@ -24,7 +24,27 @@ const posts = [
   require('./blog/p22'),
   require('./blog/p23'),
   require('./blog/p24'),
-  require('./blog/p25')
+  require('./blog/p25'),
+  require('./blog/p26'),
+  require('./blog/p27'),
+  require('./blog/p28'),
+  require('./blog/p29'),
+  require('./blog/p30'),
+  require('./blog/p31'),
+  require('./blog/p32'),
+  require('./blog/p33'),
+  require('./blog/p34'),
+  require('./blog/p35'),
+  require('./blog/p36'),
+  require('./blog/p37'),
+  require('./blog/p38'),
+  require('./blog/p39'),
+  require('./blog/p40'),
+  require('./blog/p41'),
+  require('./blog/p42'),
+  require('./blog/p43'),
+  require('./blog/p44'),
+  require('./blog/p45')
 ];
 
 function findBySlug(slug) {
