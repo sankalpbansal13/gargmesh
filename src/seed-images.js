@@ -438,8 +438,9 @@ function ensureExclusiveProductPhotos() {
     {
       category: 'binding-wire',
       images: [
-        { file: 'binding-wire-ms.png', cover: true, alt: 'MS annealed binding wire coil — Garg Industrial Mesh' },
-        { file: 'binding-wire-gi.png', cover: false, alt: 'GI binding wire coil — Garg Industrial Mesh' }
+        { file: 'binding-ms-stock.png', cover: true, alt: 'MS annealed binding wire — Garg Industrial Mesh' },
+        { file: 'binding-gi-stock.jpg', cover: false, alt: 'GI binding wire — Garg Industrial Mesh' },
+        { file: 'binding-tata.jpg', cover: false, alt: 'Tata binding wire coil — Garg Industrial Mesh' }
       ]
     },
     {
