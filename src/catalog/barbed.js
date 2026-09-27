@@ -14,15 +14,15 @@ const LINES = [
     use: 'Line fencing'
   },
   {
-    slug: 'barbed-type-a-13',
-    name: 'Barbed wire Type A · 13 SWG',
-    short: 'Type A (common twist) · line and barb 13 SWG · GI',
-    use: 'Line fencing'
-  },
-  {
     slug: 'barbed-type-a-14',
     name: 'Barbed wire Type A · 14 SWG',
     short: 'Type A (common twist) · line and barb 14 SWG (2 mm) · GI',
+    use: 'Line fencing'
+  },
+  {
+    slug: 'barbed-type-a-16',
+    name: 'Barbed wire Type A · 16 SWG',
+    short: 'Type A (common twist) · line and barb 16 SWG (1.5 mm) · GI',
     use: 'Line fencing'
   },
   {
@@ -32,15 +32,15 @@ const LINES = [
     use: 'Line fencing'
   },
   {
-    slug: 'barbed-type-b-13',
-    name: 'Barbed wire Type B · 13 SWG',
-    short: 'Type B (reverse twist) · line and barb 13 SWG · GI',
-    use: 'Line fencing'
-  },
-  {
     slug: 'barbed-type-b-14',
     name: 'Barbed wire Type B · 14 SWG',
     short: 'Type B (reverse twist) · line and barb 14 SWG (2 mm) · GI',
+    use: 'Line fencing'
+  },
+  {
+    slug: 'barbed-type-b-16',
+    name: 'Barbed wire Type B · 16 SWG',
+    short: 'Type B (reverse twist) · line and barb 16 SWG (1.5 mm) · GI',
     use: 'Line fencing'
   },
   {
@@ -83,8 +83,8 @@ function buildCategory() {
   return hub({
     slug: 'barbed-wire',
     name: 'Barbed Wire, Concertina & RBT',
-    short_desc: 'GI barbed wire Type A and Type B in 12, 13 and 14 SWG. Concertina 1.5 and 2.5 ft. RBT 2.5 ft.',
-    description: 'Galvanised barbed wire, concertina coil and razor barbed tape from Garg Industrial Mesh, Sector 9 Noida. Type A is common twist. Type B is reverse twist. Line and barb 12, 13 or 14 SWG. Concertina coils 1.5 ft and 2.5 ft. RBT 2.5 ft, drawn straight.',
+    short_desc: 'GI barbed wire Type A and Type B in 12, 14 and 16 SWG. Concertina 1.5 and 2.5 ft. RBT 2.5 ft.',
+    description: 'Galvanised barbed wire, concertina coil and razor barbed tape from Garg Industrial Mesh, Sector 9 Noida. Type A is common twist. Type B is reverse twist. Line and barb 12 SWG (2.5 mm), 14 SWG (2 mm) or 16 SWG (1.5 mm). Concertina coils 1.5 ft and 2.5 ft. RBT 2.5 ft, drawn straight.',
     meta_title: 'Barbed Wire, Concertina & RBT Noida | Garg',
     meta_description: 'GI barbed wire Type A and B, concertina 1.5 and 2.5 ft, RBT 2.5 ft. Noida. Quote 9910238277.',
     meta_keywords: 'barbed wire noida, concertina coil noida, rbt wire, gi barbed wire',
@@ -96,11 +96,11 @@ function buildCategory() {
       {
         id: 'range',
         title: 'Range',
-        body: 'GI only. 12 SWG is 2.5 mm and 14 SWG is 2 mm on the Garg gauge chart. 13 SWG sits between them — confirm millimetres on the RFQ if the drawing needs a number.',
+        body: 'GI only. On the Garg gauge chart, 12 SWG is 2.5 mm, 14 SWG is 2 mm, and 16 SWG is 1.5 mm.',
         tables: [[
           ['Product', 'Stock'],
-          ['Barbed Type A', 'Common twist · 12 / 13 / 14 SWG'],
-          ['Barbed Type B', 'Reverse twist · 12 / 13 / 14 SWG'],
+          ['Barbed Type A', 'Common twist · 12 SWG (2.5 mm) / 14 SWG (2 mm) / 16 SWG (1.5 mm)'],
+          ['Barbed Type B', 'Reverse twist · 12 SWG (2.5 mm) / 14 SWG (2 mm) / 16 SWG (1.5 mm)'],
           ['Concertina', '1.5 ft and 2.5 ft coils'],
           ['RBT', '2.5 ft, drawn straight']
         ]]

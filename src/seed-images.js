@@ -322,7 +322,7 @@ function ensureStudioImages() {
         const ok = addImage(
           design,
           dest,
-          `${design.name} — studio — Garg Industrial Mesh`,
+          f.alt || `${design.name} — studio — Garg Industrial Mesh`,
           sort,
           !coverSet,
           seen
@@ -347,6 +347,11 @@ function ensureStudioImages() {
     { src: 'shared/machhar-cartons.png', dest: 'studio-machhar-cartons.png' }
   ]);
   linkPack('pvc-plastic-jali', [
+    {
+      src: path.join(root, 'assets', 'catalog-photos', 'pvc-jali-roll.png'),
+      dest: 'pvc-jali-roll.png',
+      alt: 'Green hexagonal PVC plastic jali roll — Garg Industrial Mesh'
+    },
     { src: 'shared/pvc-closeup.png', dest: 'studio-pvc-closeup.png' },
     { src: 'shared/pvc-rolls.png', dest: 'studio-pvc-rolls.png' },
     { src: 'shared/pvc-hero-rolls.png', dest: 'studio-pvc-hero-rolls.png' },
@@ -372,9 +377,18 @@ function ensureStudioImages() {
     { src: 'shared/monkey-spikes-pc.png', dest: 'studio-monkey-spikes-pc.png' },
     { src: 'shared/monkey-spikes-installed.png', dest: 'studio-monkey-spikes-installed.png' }
   ]);
+  // Re-attached after wipeCat inside linkPack, so these survive STUDIO_OWNED.
   linkPack('anti-bird-net', [
-    { src: 'shared/bird-net-balcony.png', dest: 'studio-bird-net-balcony.png' },
-    { src: 'shared/bird-net-view.png', dest: 'studio-bird-net-view.png' }
+    {
+      src: path.join(root, 'assets', 'catalog-photos', 'bird-net-blue.png'),
+      dest: 'bird-net-blue.png',
+      alt: 'Blue anti-bird net on a balcony — Garg Industrial Mesh'
+    },
+    {
+      src: path.join(root, 'assets', 'catalog-photos', 'bird-net-green.png'),
+      dest: 'bird-net-green.png',
+      alt: 'Green anti-bird net roll — Garg Industrial Mesh'
+    }
   ]);
 
   // Expanded mesh — 3 distinct views per design
@@ -432,7 +446,8 @@ function ensureExclusiveProductPhotos() {
         { file: 'chain-link-pvc-dark-green.png', cover: false, alt: 'Dark green PVC powder-coated chain link — Garg Industrial Mesh' },
         { file: 'chain-link-pvc-light-green.png', cover: false, alt: 'Light green PVC powder-coated chain link — Garg Industrial Mesh' },
         { file: 'chain-link-pvc-blue.png', cover: false, alt: 'Blue PVC powder-coated chain link — Garg Industrial Mesh' },
-        { file: 'chain-link-pvc-black.png', cover: false, alt: 'Black PVC powder-coated chain link — Garg Industrial Mesh' }
+        { file: 'chain-link-pvc-black.png', cover: false, alt: 'Black PVC powder-coated chain link — Garg Industrial Mesh' },
+        { file: 'chain-link-pvc-grey.png', cover: false, alt: 'Grey PVC powder-coated chain link — Garg Industrial Mesh' }
       ]
     },
     {
@@ -494,8 +509,13 @@ function ensureExclusiveProductPhotos() {
     const cover = set.images.find((img) => img.cover) || set.images[0];
     for (const img of set.images) {
       const src = path.join(photoDir, img.file);
-      const before = fs.existsSync(path.join(uploadsDir, img.file));
-      if (copyIfNeeded(src, img.file, true)) {
+      const destAbs = path.join(uploadsDir, img.file);
+      const before = fs.existsSync(destAbs);
+      // PVC chain-link rolls must replace the previous upload even when the dest already exists.
+      if (set.category === 'chain-link-mesh' && /^chain-link-pvc-/.test(img.file) && fs.existsSync(src)) {
+        fs.copyFileSync(src, destAbs);
+        if (!before) copied++;
+      } else if (copyIfNeeded(src, img.file, true)) {
         if (!before) copied++;
       }
     }
@@ -533,6 +553,78 @@ function ensureExclusiveProductPhotos() {
       'SELECT COUNT(*) AS c FROM design_images WHERE design_id = ? AND is_cover = 1'
     ).get(design.id).c;
     if (!hasCover) setCover.run(design.id, item.file);
+  }
+
+  const jobwork = [
+    { file: 'jobwork-concertina-wall.png', cover: false, alt: 'Concertina coil fitted on a boundary wall — Garg Industrial Mesh' },
+    { file: 'jobwork-concertina-brackets.jpg', cover: false, alt: 'Concertina coil on Y-brackets — Garg Industrial Mesh' }
+  ];
+  const scoped = [
+    {
+      category: 'barbed-wire',
+      match: (slug) => slug.startsWith('barbed-type-'),
+      images: [
+        { file: 'barbed-wire-gi.png', cover: true, alt: 'GI barbed wire coil — Garg Industrial Mesh' },
+        ...jobwork
+      ]
+    },
+    {
+      category: 'barbed-wire',
+      match: (slug) => slug.startsWith('concertina-'),
+      images: [
+        { file: 'concertina-coil-gi.png', cover: true, alt: 'GI concertina coil — Garg Industrial Mesh' },
+        ...jobwork
+      ]
+    },
+    {
+      category: 'barbed-wire',
+      match: (slug) => slug.startsWith('rbt-'),
+      images: [
+        { file: 'rbt-straight-gi.png', cover: true, alt: 'GI razor barbed tape drawn straight — Garg Industrial Mesh' },
+        ...jobwork
+      ]
+    },
+    {
+      category: 'fine-mesh',
+      match: () => true,
+      images: [
+        { file: 'fine-mesh-ss304.png', cover: true, alt: 'SS 304 wire cloth — Garg Industrial Mesh' },
+        { file: 'fine-mesh-brass.jpg', cover: false, alt: 'Brass wire mesh cloth — Garg Industrial Mesh' },
+        { file: 'fine-mesh-copper.jpg', cover: false, alt: 'Copper wire mesh cloth — Garg Industrial Mesh' }
+      ]
+    }
+  ];
+  const clearGallery = db.prepare('DELETE FROM design_images WHERE design_id = ?');
+  const scopedFiles = new Set();
+  for (const pack of scoped) {
+    for (const img of pack.images) {
+      if (scopedFiles.has(img.file)) continue;
+      scopedFiles.add(img.file);
+      const src = path.join(photoDir, img.file);
+      const destAbs = path.join(uploadsDir, img.file);
+      const before = fs.existsSync(destAbs);
+      if (fs.existsSync(src)) {
+        fs.copyFileSync(src, destAbs);
+        if (!before) copied++;
+      }
+    }
+  }
+  for (const pack of scoped) {
+    const keep = new Set(pack.images.map((img) => img.file));
+    const cover = pack.images.find((img) => img.cover) || pack.images[0];
+    for (const design of getDesigns.all(pack.category)) {
+      if (!pack.match(design.slug)) continue;
+      clearGallery.run(design.id);
+      pack.images.forEach((img, i) => {
+        if (!keep.has(img.file) || !fs.existsSync(path.join(uploadsDir, img.file))) return;
+        insert.run(design.id, img.file, '', img.alt, i + 1, img.cover ? 1 : 0, null, null, null);
+        linked++;
+      });
+      if (cover && fs.existsSync(path.join(uploadsDir, cover.file))) {
+        db.prepare('UPDATE design_images SET is_cover = 0 WHERE design_id = ?').run(design.id);
+        setCover.run(design.id, cover.file);
+      }
+    }
   }
 
   return { copied, linked };
