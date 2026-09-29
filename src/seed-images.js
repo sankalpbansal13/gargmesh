@@ -538,6 +538,36 @@ function ensureExclusiveProductPhotos() {
     }
   }
 
+  // Acoustic perforated sheets only (not the tissue pack). Re-copied every boot
+  // so an older upload of the same filename cannot stick. admin_edited is skipped.
+  const acousticSheets = {
+    category: 'acoustic-perforated',
+    slugs: new Set(['acoustic-3mm', 'acoustic-5mm']),
+    images: [
+      { file: 'acoustic-perf-sheet.png', cover: true, alt: 'GI acoustic perforated sheet — Garg Industrial Mesh' },
+      { file: 'acoustic-perf-closeup.png', cover: false, alt: 'Round holes on a GI acoustic perforated sheet — Garg Industrial Mesh' },
+      { file: 'acoustic-perf-backing.png', cover: false, alt: 'GI acoustic perforated sheet with tissue and glass wool — Garg Industrial Mesh' }
+    ]
+  };
+  const clearAcousticGallery = db.prepare('DELETE FROM design_images WHERE design_id = ?');
+  for (const img of acousticSheets.images) {
+    const src = path.join(photoDir, img.file);
+    const destAbs = path.join(uploadsDir, img.file);
+    const before = fs.existsSync(destAbs);
+    if (!fs.existsSync(src)) continue;
+    fs.copyFileSync(src, destAbs);
+    if (!before) copied++;
+  }
+  for (const design of getDesigns.all(acousticSheets.category)) {
+    if (design.admin_edited || !acousticSheets.slugs.has(design.slug)) continue;
+    clearAcousticGallery.run(design.id);
+    acousticSheets.images.forEach((img, i) => {
+      if (!fs.existsSync(path.join(uploadsDir, img.file))) return;
+      insert.run(design.id, img.file, '', img.alt, i + 1, img.cover ? 1 : 0, null, null, null);
+      linked++;
+    });
+  }
+
   for (const item of perDesign) {
     const src = path.join(photoDir, item.file);
     const before = fs.existsSync(path.join(uploadsDir, item.file));
