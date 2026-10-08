@@ -466,6 +466,13 @@ function ensureExclusiveProductPhotos() {
       ]
     },
     {
+      category: 'corrugated-perforated',
+      images: [
+        { file: 'corrugated-perforated-closeup.jpg', cover: true, alt: 'Round holes on a corrugated perforated sheet — Garg Industrial Mesh' },
+        { file: 'corrugated-perforated-lengths.jpg', cover: false, alt: 'Corrugated perforated sheets in long lengths — Garg Industrial Mesh' }
+      ]
+    },
+    {
       category: 'powder-coated-welded-mesh',
       images: [
         { file: 'welded-pvc-dark-green.png', cover: true, alt: 'Dark green powder-coated welded mesh — Garg Industrial Mesh' },

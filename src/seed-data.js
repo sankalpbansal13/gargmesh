@@ -373,6 +373,27 @@ function buildDesignTech(design, category) {
       ]
     };
   }
+  if (catSlug === 'corrugated-perforated') {
+    const custom = /custom/i.test(design.slug || '');
+    const usual = String(design.name).replace('Corrugated perforated ', '');
+    const finishedLen = custom ? 'your length' : String(usual.split('×')[1] || '').trim();
+    return {
+      kind: 'corrugated',
+      family: 'Corrugated round hole',
+      holeLabel: design.name,
+      bridge_mm: null,
+      orientation: 'Finished width is 1 metre. Length follows the sheet you order.',
+      maxThicknessTip: 'Tell us thickness, hole size and quantity with the length.',
+      oa_note: design.short_desc || '',
+      plain: design.description || design.short_desc,
+      rows: [
+        { dt: 'Usual sheet', dd: custom ? 'Made to your size' : usual },
+        { dt: 'Finished size', dd: '1 m × ' + finishedLen },
+        { dt: 'Other sizes', dd: '4×8, 4×10 and 4×12 ft are usual. Any other length on order.' },
+        { dt: 'Profile', dd: 'Corrugated sheet, round holes' }
+      ]
+    };
+  }
   if (
     catSlug === 'pvc-plastic-jali' ||
     catSlug === 'bird-monkey-spikes' ||

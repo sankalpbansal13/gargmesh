@@ -14,11 +14,12 @@ const fiberMesh = require('./fiber-mesh');
 const bindingWire = require('./binding-wire');
 const constructionNet = require('./construction-net');
 const chickenMesh = require('./chicken-mesh');
+const corrugated = require('./corrugated');
 
 const EXTRA_MODULES = [
   ssWelded, expanded, chainLink, machhar, pvc, bird,
   powderWelded, barbed, fineMesh, millJali, acoustic, popJali, fiberMesh, bindingWire,
-  constructionNet, chickenMesh
+  constructionNet, chickenMesh, corrugated
 ];
 
 /** UI / nav grouping for category objects (not a DB column). */
@@ -46,7 +47,8 @@ function extraCategories() {
     fiberMesh.buildCategory(),
     bindingWire.buildCategory(),
     constructionNet.buildCategory(),
-    chickenMesh.buildCategory()
+    chickenMesh.buildCategory(),
+    corrugated.buildCategory()
   ];
 }
 
@@ -85,7 +87,8 @@ const GROUP_BY_SLUG = {
   'fiber-mesh': 'sheet',
   'binding-wire': 'sheet',
   'construction-net': 'sheet',
-  'chicken-mesh': 'sheet'
+  'chicken-mesh': 'sheet',
+  'corrugated-perforated': 'sheet'
 };
 
 function categoryGroup(slug) {
