@@ -23,7 +23,7 @@
         <a href="/products/<%= c.slug %>" class="wiz-card">
           <div class="wiz-card-media">
             <% if (c.image) { %>
-              <img src="<%= c.image %>" alt="" width="480" height="360" loading="lazy">
+              <img src="<%= c.image %>" alt="<%= c.name %>" width="480" height="360" loading="lazy">
             <% } else { %>
               <span class="wiz-card-fallback"><%= c.name %></span>
             <% } %>

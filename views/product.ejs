@@ -67,7 +67,7 @@ const faqLd = faqs.length ? {"@context":"https://schema.org","@type":"FAQPage","
       <div class="pd-thumbs" id="pdThumbs" role="tablist" aria-label="Product photos">
         <% images.forEach(function(img, i){ %>
         <button type="button" class="pd-thumb <%= i===0?'active':'' %>" data-index="<%= i %>" aria-label="Show photo <%= i+1 %>" aria-selected="<%= i===0?'true':'false' %>">
-          <img src="/uploads/<%= img.filename %>" alt="" loading="lazy" width="64" height="64">
+          <img src="/uploads/<%= img.filename %>" alt="<%= img.alt_text || product.name %>" loading="lazy" width="64" height="64">
         </button>
         <% }); %>
       </div>

@@ -653,6 +653,13 @@ app.get('/about', (req, res) => {
   });
 });
 
+app.get('/privacy', (req, res) => {
+  res.render('privacy', {
+    title: 'Privacy Policy | Garg Industrial Mesh',
+    page: 'privacy'
+  });
+});
+
 app.get('/contact', (req, res) => {
   const contactLd = {
     "@context":"https://schema.org","@type":"ContactPage",
@@ -763,7 +770,7 @@ app.get('/sitemap.xml', (req, res) => {
   const sectorSlugs = sectorList.map(s => s.slug);
   const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   let xml = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
-  const staticPages = ['', '/products', '/areas', '/about', '/contact', '/blog'];
+  const staticPages = ['', '/products', '/areas', '/about', '/contact', '/privacy', '/blog'];
   staticPages.forEach(p => {
     xml += `  <url><loc>${esc(base + p)}</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>\n`;
   });

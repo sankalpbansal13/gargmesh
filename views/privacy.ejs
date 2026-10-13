@@ -1,0 +1,22 @@
+<% const meta_description = "How Garg Industrial Mesh uses the name and phone number you send with an enquiry. Sector 9, Noida."; %>
+<%- include('partials/_head', { meta_description: meta_description }) %>
+<%- include('partials/_header') %>
+
+<section class="page-head">
+  <div class="container">
+    <span class="eyebrow">Privacy</span>
+    <h1>Privacy policy</h1>
+    <p>What we keep when you ask for a quote.</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container narrow">
+    <p>Garg Industrial Mesh is at G-25, G Block, Sector 9, Noida, Uttar Pradesh 201301. Phone <%= site.phone %>.</p>
+    <p>Quote forms on this site ask for your name and phone number, plus the product, size and quantity you type. Email is optional. We use those details to reply with price and availability, and we keep them so we can follow up on the same enquiry.</p>
+    <p>Calls and WhatsApp messages stay in those apps. We do not pass enquiry details to other companies for their own marketing.</p>
+    <p>To ask about a message you sent, call <%= site.phone %> or use the <a href="/contact">contact page</a>.</p>
+  </div>
+</section>
+
+<%- include('partials/_footer') %>
